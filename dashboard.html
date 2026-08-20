@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>แดชบอร์ดเจ้าของ — พี.เอส ออโต้ไทร์</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;500;600;700&family=Bai+Jamjuree:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#f9fafc; --card:#ffffff; --text:#1a2032; --text-sub:#5c6478;
+    --accent:#2563eb; --accent-soft:#eaf1ff; --dark:#1a2032;
+    --success:#16a34a; --warn:#d97706; --danger:#dc2626; --border:#e7e9f0;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{font-family:'Anuphan',sans-serif; background:var(--bg); color:var(--text); padding-bottom:60px;}
+  h1,h2,h3{font-family:'Bai Jamjuree',sans-serif; font-weight:700;}
+
+  header{
+    background:var(--dark); color:#fff; padding:20px 24px;
+    display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;
+  }
+  header .title{display:flex; align-items:center; gap:10px;}
+  header h1{font-size:18px;}
+  #syncStatus{font-size:12px; color:#c7cce0; display:flex; align-items:center; gap:6px;}
+  #syncStatus .dot{width:7px; height:7px; border-radius:50%; background:#c7cce0;}
+  #syncStatus.online .dot{background:var(--success);}
+  #syncStatus.offline .dot{background:var(--danger);}
+  #syncStatus.loading .dot{background:var(--warn);}
+  #refreshBtn{
+    background:var(--accent); color:#fff; border:none; padding:9px 18px; border-radius:9px;
+    font-size:13px; font-weight:600; cursor:pointer;
+  }
+  #refreshBtn:hover{background:#1d4fd1;}
+
+  main{max-width:1100px; margin:0 auto; padding:24px;}
+
+  .card{
+    background:var(--card); border-radius:14px; padding:24px; border:1px solid var(--border);
+    box-shadow:0 4px 16px rgba(20,25,50,.06);
+  }
+
+  .filters{display:flex; gap:14px; flex-wrap:wrap; margin-bottom:20px;}
+  .filters .field{min-width:160px;}
+  .field-label{font-size:12px; color:var(--text-sub); font-weight:600; display:block; margin-bottom:5px;}
+  .select-input{
+    font-family:inherit; font-size:14px; padding:9px 12px; border:1px solid var(--border);
+    border-radius:9px; background:#fff; color:var(--text); width:100%;
+  }
+  .select-input:focus{outline:none; border-color:var(--accent);}
+
+  .summary-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:16px; margin-bottom:24px;}
+  .summary-card .label{font-size:12px; color:var(--text-sub); font-weight:600; margin-bottom:8px;}
+  .summary-card .value{font-family:'Bai Jamjuree',sans-serif; font-weight:700; font-size:24px;}
+  .summary-card .value.success{color:var(--success);}
+  .summary-card .value.accent{color:var(--accent);}
+  .summary-card .value.danger{color:var(--danger);}
+
+  section{margin-bottom:24px;}
+  section h2{font-size:16px; margin-bottom:14px;}
+
+  .branch-compare{display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:16px;}
+  .branch-card h3{font-size:14px; margin-bottom:12px; display:flex; align-items:center; gap:8px;}
+  .branch-card h3 .dot{width:9px; height:9px; border-radius:50%; background:var(--accent);}
+  .branch-row{display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--border); font-size:13px;}
+  .branch-row:last-child{border-bottom:none;}
+  .branch-row .v{font-family:'Bai Jamjuree',sans-serif; font-weight:700;}
+
+  .cat-bar-row{display:flex; align-items:center; gap:12px; padding:9px 0; font-size:13px;}
+  .cat-bar-row .name{width:150px; flex-shrink:0; color:var(--text-sub);}
+  .cat-bar-track{flex:1; height:10px; background:#f0f1f5; border-radius:6px; overflow:hidden; display:flex;}
+  .cat-bar-seg{height:100%;}
+  .cat-bar-row .total{width:70px; text-align:right; font-family:'Bai Jamjuree',sans-serif; font-weight:700; flex-shrink:0;}
+
+  table.data-table{width:100%; border-collapse:collapse; font-size:13px;}
+  table.data-table th{
+    text-align:left; padding:10px 14px; background:#f5f6fa; color:var(--text-sub);
+    font-weight:600; font-size:12px; border-bottom:1px solid var(--border);
+  }
+  table.data-table td{padding:10px 14px; border-bottom:1px solid var(--border);}
+  table.data-table tr:last-child td{border-bottom:none;}
+  table.data-table .num{font-family:'Bai Jamjuree',sans-serif; text-align:right;}
+  th.num{text-align:right;}
+
+  .branch-chip{font-size:11px; font-weight:700; padding:3px 10px; border-radius:999px; background:var(--accent-soft); color:var(--accent);}
+  .type-chip{font-size:11px; font-weight:700; padding:3px 10px; border-radius:999px;}
+  .type-chip.sale{background:#e7f8ee; color:var(--success);}
+  .type-chip.restock{background:var(--accent-soft); color:var(--accent);}
+  .qty-low{color:var(--danger); font-weight:700;}
+
+  .empty-row{text-align:center; color:var(--text-sub); padding:30px 20px !important;}
+  .table-wrap{overflow-x:auto;}
+  .loading-note{text-align:center; color:var(--text-sub); padding:40px; font-size:14px;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="title">
+    <h1>📊 แดชบอร์ดเจ้าของ — พี.เอส ออโต้ไทร์</h1>
+  </div>
+  <div style="display:flex; align-items:center; gap:14px;">
+    <span id="syncStatus">● กำลังโหลด...</span>
+    <button id="refreshBtn">🔄 รีเฟรชข้อมูล</button>
+  </div>
+</header>
+
+<main>
+  <div class="card filters">
+    <div class="field">
+      <label class="field-label">สาขา</label>
+      <select class="select-input" id="f_branch">
+        <option value="all">ทั้งหมด (2 สาขา)</option>
+        <option value="phrabat">สาขาพระบาท</option>
+        <option value="lotus_pongsanuk">สาขาโลตัสปงสนุก</option>
+      </select>
+    </div>
+    <div class="field">
+      <label class="field-label">หมวดสินค้า</label>
+      <select class="select-input" id="f_category">
+        <option value="all">ทั้งหมด</option>
+      </select>
+    </div>
+    <div class="field">
+      <label class="field-label">ตั้งแต่วันที่ (ยอดขาย/รับของ)</label>
+      <input class="select-input" type="date" id="f_from">
+    </div>
+    <div class="field">
+      <label class="field-label">ถึงวันที่</label>
+      <input class="select-input" type="date" id="f_to">
+    </div>
+  </div>
+
+  <div id="content">
+    <p class="loading-note">กำลังโหลดข้อมูลจาก Supabase...</p>
+  </div>
+</main>
+
+<script>
+  const SUPABASE_URL = "https://ofjsvfnthrokggugynjn.supabase.co";
+  const SUPABASE_ANON_KEY = "sb_publishable_e_pe4MUnEXPe_HYPf2Z6JQ_HWu46406";
+  const BRANCH_NAMES = { phrabat: "สาขาพระบาท", lotus_pongsanuk: "สาขาโลตัสปงสนุก" };
+  const BRANCH_COLORS = { phrabat: "#2563eb", lotus_pongsanuk: "#16a34a" };
+  const CAT_COLORS = ["#2563eb","#16a34a","#d97706","#dc2626","#7c3aed","#0891b2","#db2777","#65a30d","#ea580c","#4f46e5"];
+  const LOW_STOCK_THRESHOLD = 3;
+
+  let allProducts = [];
+  let allTransactions = [];
+  let stockCategoryFilter = "all";
+  let stockBrandFilter = "all";
+  let stockModelFilter = "all";
+  let stockSizeFilter = "all";
+
+  function supabaseHeaders(){
+    return { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` };
+  }
+
+  function setStatus(mode, text){
+    const el = document.getElementById("syncStatus");
+    el.className = mode;
+    el.textContent = `● ${text}`;
+  }
+
+  async function loadAll(){
+    setStatus("loading", "กำลังโหลด...");
+    try{
+      const [pRes, tRes] = await Promise.all([
+        fetch(`${SUPABASE_URL}/rest/v1/products?select=*`, { headers: supabaseHeaders() }),
+        fetch(`${SUPABASE_URL}/rest/v1/transactions?select=*`, { headers: supabaseHeaders() })
+      ]);
+      if(!pRes.ok || !tRes.ok) throw new Error("fetch failed");
+      const products = await pRes.json();
+      const transactions = await tRes.json();
+      allProducts = products.map(p => ({ ...p, costPrice: Number(p.costPrice), sellPrice: Number(p.sellPrice), qty: Number(p.qty) }));
+      allTransactions = transactions.map(t => ({ ...t, qty: Number(t.qty), unitPrice: Number(t.unitPrice), total: Number(t.total) }));
+      setStatus("online", `ออนไลน์ • อัปเดตล่าสุด ${new Date().toLocaleTimeString("th-TH")}`);
+      populateCategoryFilter();
+      renderDashboard();
+    }catch(err){
+      setStatus("offline", "โหลดข้อมูลไม่สำเร็จ — เช็คอินเทอร์เน็ตแล้วลองรีเฟรช");
+      document.getElementById("content").innerHTML = `<p class="loading-note">ไม่สามารถโหลดข้อมูลได้ ลองกด "รีเฟรชข้อมูล" อีกครั้ง</p>`;
+    }
+  }
+
+  function populateCategoryFilter(){
+    const sel = document.getElementById("f_category");
+    const current = sel.value;
+    const cats = [...new Set(allProducts.map(p => p.category))].sort((a,b)=>a.localeCompare(b,"th"));
+    sel.innerHTML = `<option value="all">ทั้งหมด</option>` + cats.map(c => `<option value="${c}">${c}</option>`).join("");
+    sel.value = cats.includes(current) ? current : "all";
+  }
+
+  function getFilters(){
+    return {
+      branch: document.getElementById("f_branch").value,
+      category: document.getElementById("f_category").value,
+      from: document.getElementById("f_from").value,
+      to: document.getElementById("f_to").value
+    };
+  }
+
+  function filterProducts(f){
+    return allProducts.filter(p =>
+      (f.branch === "all" || p.branch === f.branch) &&
+      (f.category === "all" || p.category === f.category)
+    );
+  }
+
+  function productsForBranch(branch){
+    return allProducts.filter(p => branch === "all" || p.branch === branch);
+  }
+
+  function distinctSorted(arr){
+    return [...new Set(arr.filter(Boolean))].sort((a, b) => a.localeCompare(b, "th"));
+  }
+  function getDistinctCategories(products){
+    return distinctSorted(products.map(p => p.category));
+  }
+  function getDistinctBrands(products, category){
+    const list = (!category || category === "all") ? products : products.filter(p => p.category === category);
+    return distinctSorted(list.map(p => p.brand));
+  }
+  function getDistinctModels(products, category, brand){
+    let list = products;
+    if(category && category !== "all") list = list.filter(p => p.category === category);
+    if(brand && brand !== "all") list = list.filter(p => p.brand === brand);
+    return distinctSorted(list.map(p => p.model));
+  }
+  function getDistinctSizes(products, category, brand, model){
+    let list = products;
+    if(category && category !== "all") list = list.filter(p => p.category === category);
+    if(brand && brand !== "all") list = list.filter(p => p.brand === brand);
+    if(model && model !== "all") list = list.filter(p => p.model === model);
+    return distinctSorted(list.map(p => p.size));
+  }
+  function filterSelectHTML(id, label, options, selected){
+    return `
+      <div class="field">
+        <label class="field-label">${label}</label>
+        <select class="select-input" id="${id}">
+          <option value="all">ทั้งหมด</option>
+          ${options.map(o => `<option value="${o}" ${o === selected ? "selected" : ""}>${o}</option>`).join("")}
+        </select>
+      </div>
+    `;
+  }
+  function applyStockFilters(products){
+    let list = products;
+    if(stockCategoryFilter !== "all") list = list.filter(p => p.category === stockCategoryFilter);
+    if(stockBrandFilter !== "all") list = list.filter(p => p.brand === stockBrandFilter);
+    if(stockModelFilter !== "all") list = list.filter(p => p.model === stockModelFilter);
+    if(stockSizeFilter !== "all") list = list.filter(p => p.size === stockSizeFilter);
+    return list;
+  }
+
+  function filterTransactions(f){
+    return allTransactions.filter(t => {
+      if(f.branch !== "all" && t.branch !== f.branch) return false;
+      const d = (t.datetime || "").slice(0, 10);
+      if(f.from && d < f.from) return false;
+      if(f.to && d > f.to) return false;
+      if(f.category !== "all"){
+        const p = allProducts.find(x => x.id === t.productId);
+        if(!p || p.category !== f.category) return false;
+      }
+      return true;
+    });
+  }
+
+  function money(n){
+    return Number(n || 0).toLocaleString("th-TH", { minimumFractionDigits: 2 }) + " ฿";
+  }
+
+  function renderDashboard(){
+    const f = getFilters();
+    const products = filterProducts(f);
+    const transactions = filterTransactions(f);
+    const sales = transactions.filter(t => t.type === "sale");
+    const restocks = transactions.filter(t => t.type === "restock");
+    const salesTotal = sales.reduce((s, t) => s + t.total, 0);
+    const restockTotal = restocks.reduce((s, t) => s + t.total, 0);
+    const lowStock = products.filter(p => p.qty <= LOW_STOCK_THRESHOLD);
+
+    const branches = f.branch === "all" ? ["phrabat", "lotus_pongsanuk"] : [f.branch];
+
+    const content = document.getElementById("content");
+    content.innerHTML = `
+      <div class="summary-grid">
+        <div class="card summary-card">
+          <div class="label">ยอดขายรวม</div>
+          <div class="value success">${money(salesTotal)}</div>
+        </div>
+        <div class="card summary-card">
+          <div class="label">ต้นทุนรับของเข้ารวม</div>
+          <div class="value accent">${money(restockTotal)}</div>
+        </div>
+        <div class="card summary-card">
+          <div class="label">จำนวนสินค้าทั้งหมด (SKU)</div>
+          <div class="value">${products.length.toLocaleString("th-TH")}</div>
+        </div>
+        <div class="card summary-card">
+          <div class="label">สต๊อกต่ำ (≤ ${LOW_STOCK_THRESHOLD} ชิ้น)</div>
+          <div class="value danger">${lowStock.length.toLocaleString("th-TH")}</div>
+        </div>
+      </div>
+
+      <section class="card">
+        <h2>เทียบสาขา</h2>
+        <div class="branch-compare">
+          ${branches.map(b => {
+            const bProducts = products.filter(p => p.branch === b);
+            const bSales = sales.filter(t => t.branch === b).reduce((s,t)=>s+t.total,0);
+            const bRestock = restocks.filter(t => t.branch === b).reduce((s,t)=>s+t.total,0);
+            const bLow = bProducts.filter(p => p.qty <= LOW_STOCK_THRESHOLD).length;
+            const bQty = bProducts.reduce((s,p)=>s+p.qty, 0);
+            return `
+              <div class="branch-card">
+                <h3><span class="dot" style="background:${BRANCH_COLORS[b]}"></span>${BRANCH_NAMES[b]}</h3>
+                <div class="branch-row"><span>ยอดขาย</span><span class="v">${money(bSales)}</span></div>
+                <div class="branch-row"><span>ต้นทุนรับของเข้า</span><span class="v">${money(bRestock)}</span></div>
+                <div class="branch-row"><span>จำนวนสินค้า (SKU)</span><span class="v">${bProducts.length.toLocaleString("th-TH")}</span></div>
+                <div class="branch-row"><span>สต๊อกรวม (ชิ้น)</span><span class="v">${bQty.toLocaleString("th-TH")}</span></div>
+                <div class="branch-row"><span>สต๊อกต่ำ</span><span class="v" style="color:var(--danger)">${bLow}</span></div>
+              </div>
+            `;
+          }).join("")}
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>สต๊อกคงเหลือแยกหมวด</h2>
+        ${renderCategoryBars(products, branches)}
+      </section>
+
+      <section class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:14px;">
+          <h2 style="margin-bottom:0;" id="stockDetailHeading">รายการสินค้าคงเหลือ</h2>
+          <button id="exportStockCsvBtn" style="cursor:pointer; font-weight:600; background:var(--dark); color:#fff; border:none; padding:9px 16px; border-radius:9px; font-size:13px;">⬇️ CSV</button>
+        </div>
+        <div class="filters" id="stockFilters" style="margin-bottom:16px;"></div>
+        <div class="table-wrap" id="stockDetailWrap"></div>
+      </section>
+
+      <section class="card">
+        <h2>รายการเคลื่อนไหวล่าสุด (${transactions.length.toLocaleString("th-TH")} รายการตามตัวกรอง)</h2>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr><th>วันที่-เวลา</th><th>สาขา</th><th>ประเภท</th><th>สินค้า</th><th class="num">จำนวน</th><th class="num">ยอดเงิน</th><th>ผู้บันทึก</th></tr>
+            </thead>
+            <tbody>
+              ${renderTransactionRows(transactions)}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    `;
+
+    document.getElementById("exportStockCsvBtn").addEventListener("click", exportStockCsv);
+    renderStockFilters();
+  }
+
+  function renderStockFilters(){
+    const f = getFilters();
+    const branchProducts = productsForBranch(f.branch);
+    const box = document.getElementById("stockFilters");
+    const cats = getDistinctCategories(branchProducts);
+    const brands = getDistinctBrands(branchProducts, stockCategoryFilter);
+    const models = getDistinctModels(branchProducts, stockCategoryFilter, stockBrandFilter);
+    const sizes = getDistinctSizes(branchProducts, stockCategoryFilter, stockBrandFilter, stockModelFilter);
+
+    box.innerHTML =
+      filterSelectHTML("stockCategoryFilter", "หมวด", cats, stockCategoryFilter) +
+      filterSelectHTML("stockBrandFilter", "ยี่ห้อ", brands, stockBrandFilter) +
+      filterSelectHTML("stockModelFilter", "รุ่น", models, stockModelFilter) +
+      filterSelectHTML("stockSizeFilter", "ขนาด", sizes, stockSizeFilter);
+
+    document.getElementById("stockCategoryFilter").addEventListener("change", (e)=>{
+      stockCategoryFilter = e.target.value;
+      stockBrandFilter = "all"; stockModelFilter = "all"; stockSizeFilter = "all";
+      renderStockFilters();
+      updateStockDetailTable();
+    });
+    document.getElementById("stockBrandFilter").addEventListener("change", (e)=>{
+      stockBrandFilter = e.target.value;
+      stockModelFilter = "all"; stockSizeFilter = "all";
+      renderStockFilters();
+      updateStockDetailTable();
+    });
+    document.getElementById("stockModelFilter").addEventListener("change", (e)=>{
+      stockModelFilter = e.target.value;
+      stockSizeFilter = "all";
+      renderStockFilters();
+      updateStockDetailTable();
+    });
+    document.getElementById("stockSizeFilter").addEventListener("change", (e)=>{
+      stockSizeFilter = e.target.value;
+      updateStockDetailTable();
+    });
+
+    updateStockDetailTable();
+  }
+
+  function updateStockDetailTable(){
+    const f = getFilters();
+    const branchProducts = productsForBranch(f.branch);
+    const wrap = document.getElementById("stockDetailWrap");
+    wrap.innerHTML = renderStockDetailTable(branchProducts, f.branch === "all");
+    document.getElementById("stockDetailHeading").textContent =
+      `รายการสินค้าคงเหลือ (${getFilteredStockList(branchProducts).length.toLocaleString("th-TH")} รายการตามตัวกรอง)`;
+  }
+
+  function renderCategoryBars(products, branches){
+    const cats = [...new Set(products.map(p => p.category))].sort((a,b)=>a.localeCompare(b,"th"));
+    if(cats.length === 0) return `<p class="loading-note">ไม่มีสินค้าตามตัวกรองนี้</p>`;
+    const maxQty = Math.max(1, ...cats.map(c => products.filter(p=>p.category===c).reduce((s,p)=>s+p.qty,0)));
+    return cats.map(c => {
+      const catProducts = products.filter(p => p.category === c);
+      const total = catProducts.reduce((s,p)=>s+p.qty, 0);
+      const segs = branches.map(b => {
+        const bQty = catProducts.filter(p=>p.branch===b).reduce((s,p)=>s+p.qty,0);
+        const pct = total > 0 ? (bQty / maxQty * 100) : 0;
+        return bQty > 0 ? `<span class="cat-bar-seg" style="width:${pct}%; background:${BRANCH_COLORS[b]}" title="${BRANCH_NAMES[b]}: ${bQty}"></span>` : "";
+      }).join("");
+      return `
+        <div class="cat-bar-row">
+          <span class="name">${c}</span>
+          <span class="cat-bar-track">${segs}</span>
+          <span class="total">${total.toLocaleString("th-TH")} ชิ้น</span>
+        </div>
+      `;
+    }).join("");
+  }
+
+  function getFilteredStockList(branchProducts){
+    const list = applyStockFilters(branchProducts);
+    return list.slice().sort((a,b) =>
+      a.category.localeCompare(b.category,"th") ||
+      a.brand.localeCompare(b.brand,"th") ||
+      a.model.localeCompare(b.model,"th") ||
+      a.size.localeCompare(b.size,"th")
+    );
+  }
+
+  const STOCK_TABLE_LIMIT = 150;
+
+  function renderStockDetailTable(branchProducts, showBranch){
+    const list = getFilteredStockList(branchProducts);
+    if(list.length === 0){
+      return `<table class="data-table"><tbody><tr><td class="empty-row">ไม่พบสินค้าตามตัวกรองนี้</td></tr></tbody></table>`;
+    }
+    const shown = list.slice(0, STOCK_TABLE_LIMIT);
+    const hiddenCount = list.length - shown.length;
+    return `
+      ${hiddenCount > 0 ? `<p style="font-size:12px; color:var(--text-sub); margin-bottom:10px;">แสดง ${shown.length.toLocaleString("th-TH")} จากทั้งหมด ${list.length.toLocaleString("th-TH")} รายการ — เลือกตัวกรองด้านบนให้เจาะจงขึ้นเพื่อดูครบ</p>` : ""}
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>รูป</th><th>หมวด</th><th>ยี่ห้อ</th><th>รุ่น</th><th>ขนาด</th>
+            ${showBranch ? "<th>สาขา</th>" : ""}
+            <th class="num">คงเหลือ</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${shown.map(p => `
+            <tr>
+              <td>${p.imageUrl ? `<img src="${p.imageUrl}" alt="" style="width:32px; height:32px; border-radius:7px; object-fit:cover;">` : `<span style="display:inline-flex; width:32px; height:32px; border-radius:7px; background:#f2f4f9; align-items:center; justify-content:center; font-size:14px;">📦</span>`}</td>
+              <td>${p.category}</td>
+              <td>${p.brand}</td>
+              <td>${p.model}</td>
+              <td>${p.size}</td>
+              ${showBranch ? `<td><span class="branch-chip">${BRANCH_NAMES[p.branch] || p.branch}</span></td>` : ""}
+              <td class="num ${p.qty <= LOW_STOCK_THRESHOLD ? "qty-low" : ""}">${p.qty.toLocaleString("th-TH")}</td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+    `;
+  }
+
+  function exportStockCsv(){
+    const f = getFilters();
+    const branchProducts = productsForBranch(f.branch);
+    const list = getFilteredStockList(branchProducts);
+    const rows = [["หมวด", "ยี่ห้อ", "รุ่น", "ขนาด", "สาขา", "คงเหลือ"]];
+    list.forEach(p => rows.push([p.category, p.brand, p.model, p.size, BRANCH_NAMES[p.branch] || p.branch, p.qty]));
+    const csv = "﻿" + rows.map(r => r.map(cell => {
+      const s = String(cell ?? "");
+      return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+    }).join(",")).join("\r\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "สต๊อกคงเหลือ.csv";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  function renderTransactionRows(transactions){
+    if(transactions.length === 0) return `<tr><td colspan="7" class="empty-row">ไม่มีรายการตามตัวกรองนี้</td></tr>`;
+    return transactions
+      .slice().sort((a,b) => (b.datetime||"").localeCompare(a.datetime||""))
+      .slice(0, 100)
+      .map(t => `
+        <tr>
+          <td>${t.datetime ? new Date(t.datetime).toLocaleString("th-TH") : "-"}</td>
+          <td><span class="branch-chip">${BRANCH_NAMES[t.branch] || t.branch}</span></td>
+          <td><span class="type-chip ${t.type}">${t.type === "sale" ? "ขาย" : "รับของเข้า"}</span></td>
+          <td>${t.productName || "-"}</td>
+          <td class="num">${t.qty}</td>
+          <td class="num">${money(t.total)}</td>
+          <td>${t.staff || "-"}</td>
+        </tr>
+      `).join("");
+  }
+
+  document.getElementById("refreshBtn").addEventListener("click", loadAll);
+  document.getElementById("f_branch").addEventListener("change", renderDashboard);
+  document.getElementById("f_category").addEventListener("change", renderDashboard);
+  document.getElementById("f_from").addEventListener("change", renderDashboard);
+  document.getElementById("f_to").addEventListener("change", renderDashboard);
+
+  loadAll();
+</script>
+
+</body>
+</html>

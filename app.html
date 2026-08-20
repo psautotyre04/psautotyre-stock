@@ -1,0 +1,1550 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>สต๊อคออนไลน์ พี.เอส ออโต้ไทร์</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;500;600;700&family=Bai+Jamjuree:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#f9fafc; --card:#ffffff; --text:#1a2032; --text-sub:#5c6478;
+    --accent:#2563eb; --accent-soft:#eaf1ff; --dark:#1a2032;
+    --success:#16a34a; --warn:#d97706; --danger:#dc2626; --border:#e7e9f0;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{font-family:'Anuphan',sans-serif; background:var(--bg); color:var(--text);}
+  h1,h2,h3,.display{font-family:'Bai Jamjuree',sans-serif; font-weight:700;}
+  button{font-family:inherit; cursor:pointer;}
+
+  /* ---------- layout ---------- */
+  .app{display:flex; min-height:100vh;}
+
+  .sidebar{
+    width:230px; background:#fff; border-right:1px solid var(--border);
+    flex-shrink:0; display:flex; flex-direction:column; position:fixed; top:0; left:0;
+    bottom:0; z-index:40; transition:transform .2s ease;
+  }
+  .sidebar .brand{
+    padding:22px 20px; border-bottom:1px solid var(--border);
+  }
+  .sidebar .brand .name{font-size:15px; font-weight:700;}
+  .sidebar .brand .branch-tag{
+    display:inline-block; margin-top:6px; font-size:12px; color:var(--accent);
+    background:var(--accent-soft); padding:3px 10px; border-radius:999px;
+  }
+  .nav{padding:14px 12px; flex:1;}
+  .nav-item{
+    display:flex; align-items:center; gap:10px; padding:11px 12px; border-radius:10px;
+    color:var(--text-sub); font-size:14px; font-weight:500; margin-bottom:4px;
+    background:none; border:none; width:100%; text-align:left;
+    justify-content:flex-start;
+  }
+  .nav-item .ic{font-size:17px;}
+  .nav-item:hover{background:#f2f4f9;}
+  .nav-item.active{background:var(--accent-soft); color:var(--accent);}
+  .sidebar-foot{padding:16px 20px; font-size:11px; color:var(--text-sub); border-top:1px solid var(--border);}
+
+  .main{flex:1; margin-left:230px; min-width:0;}
+
+  .topbar{
+    height:60px; background:#fff; border-bottom:1px solid var(--border);
+    display:flex; align-items:center; justify-content:space-between; padding:0 24px;
+    position:sticky; top:0; z-index:30;
+  }
+  .topbar h2{font-size:17px;}
+  .topbar-right{display:flex; align-items:center; gap:14px;}
+  .badge{
+    background:var(--danger); color:#fff; font-size:11px; font-weight:600;
+    padding:3px 9px; border-radius:999px;
+  }
+  .badge.zero{background:#e7e9f0; color:var(--text-sub);}
+  .sync-status{font-size:12px; color:var(--text-sub); display:flex; align-items:center; gap:5px;}
+  .sync-status .dot{width:7px; height:7px; border-radius:50%; background:#c7cce0;}
+  .sync-status.online .dot{background:var(--success);}
+  .sync-status.offline .dot{background:var(--danger);}
+  .sync-status.syncing .dot{background:var(--warn);}
+  .hamburger{display:none; background:none; border:none; font-size:22px; color:var(--text);}
+
+  .content{padding:28px 24px; max-width:1080px;}
+
+  .card{
+    background:var(--card); border-radius:14px; padding:28px;
+    box-shadow:0 4px 16px rgba(20,25,50,.06); border:1px solid var(--border);
+  }
+  .placeholder{
+    text-align:center; padding:60px 20px; color:var(--text-sub);
+  }
+  .placeholder .ic{font-size:38px; margin-bottom:14px;}
+  .placeholder h3{color:var(--text); font-size:16px; margin-bottom:6px;}
+  .placeholder p{font-size:13px;}
+
+  /* ---------- toolbar / forms / table (shared by data pages) ---------- */
+  .toolbar{
+    display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;
+  }
+  .toolbar-left{display:flex; gap:10px; align-items:center; flex-wrap:wrap;}
+  .toolbar-right{display:flex; gap:10px; flex-wrap:wrap;}
+  label.field-label{font-size:12px; color:var(--text-sub); font-weight:600; display:block; margin-bottom:5px;}
+  .select-input, .text-input{
+    font-family:inherit; font-size:14px; padding:9px 12px; border:1px solid var(--border);
+    border-radius:9px; background:#fff; color:var(--text); width:100%;
+  }
+  .select-input:focus, .text-input:focus{outline:none; border-color:var(--accent);}
+  .btn-primary{
+    background:var(--dark); color:#fff; border:none; padding:10px 18px; border-radius:9px;
+    font-size:14px; font-weight:600; transition:background .15s;
+  }
+  .btn-primary:hover{background:var(--accent);}
+  .btn-secondary{
+    background:#fff; color:var(--text); border:1px solid var(--border); padding:10px 18px;
+    border-radius:9px; font-size:14px; font-weight:600;
+  }
+  .btn-secondary:hover{border-color:var(--accent); color:var(--accent);}
+  .btn-danger-text{background:none; border:none; color:var(--danger); font-size:13px; font-weight:600;}
+  .btn-link-text{background:none; border:none; color:var(--accent); font-size:13px; font-weight:600;}
+  .form-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:16px; margin-top:6px;}
+  .form-actions{display:flex; gap:10px; margin-top:20px;}
+  table.data-table{width:100%; border-collapse:collapse; font-size:13px;}
+  table.data-table th{
+    text-align:left; padding:12px 16px; background:#f5f6fa; color:var(--text-sub);
+    font-weight:600; font-size:12px; border-bottom:1px solid var(--border);
+  }
+  table.data-table td{padding:12px 16px; border-bottom:1px solid var(--border); text-align:left;}
+  table.data-table tr:last-child td{border-bottom:none;}
+  table.data-table .num{font-family:'Bai Jamjuree',sans-serif; text-align:right;}
+  table.data-table th.num{text-align:right;}
+  .qty-low{color:var(--danger); font-weight:700;}
+  .cat-chip{
+    display:inline-block; background:var(--accent-soft); color:var(--accent); font-size:11px;
+    padding:3px 10px; border-radius:999px; font-weight:600;
+  }
+  .empty-row{text-align:center; color:var(--text-sub); padding:40px 20px !important;}
+  .seg-toggle{display:inline-flex; background:#f2f4f9; border-radius:10px; padding:4px; gap:4px;}
+  .seg-btn{
+    background:none; border:none; padding:9px 18px; border-radius:8px; font-size:13px;
+    font-weight:600; color:var(--text-sub);
+  }
+  .seg-btn.active{background:#fff; color:var(--text); box-shadow:0 2px 6px rgba(20,25,50,.08);}
+
+  .summary-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:16px;}
+  .summary-card{
+    background:var(--card); border-radius:14px; padding:22px; border:1px solid var(--border);
+    box-shadow:0 4px 16px rgba(20,25,50,.06);
+  }
+  .summary-card .label{font-size:12px; color:var(--text-sub); font-weight:600; margin-bottom:8px;}
+  .summary-card .value{font-family:'Bai Jamjuree',sans-serif; font-weight:700; font-size:24px;}
+  .summary-card .value.success{color:var(--success);}
+  .summary-card .value.accent{color:var(--accent);}
+
+  .cat-stock-row{
+    display:flex; justify-content:space-between; align-items:center; padding:12px 0;
+    border-bottom:1px solid var(--border); font-size:14px;
+  }
+  .cat-stock-row:last-child{border-bottom:none;}
+  .cat-stock-row .qty{font-family:'Bai Jamjuree',sans-serif; font-weight:700;}
+
+  .type-chip{font-size:11px; font-weight:700; padding:3px 10px; border-radius:999px;}
+  .type-chip.sale{background:#e7f8ee; color:var(--success);}
+  .type-chip.restock{background:var(--accent-soft); color:var(--accent);}
+
+  /* ---------- branch setup modal ---------- */
+  .overlay{
+    position:fixed; inset:0; background:rgba(20,25,50,.55); display:flex;
+    align-items:center; justify-content:center; z-index:100; padding:20px;
+  }
+  .modal{
+    background:#fff; border-radius:16px; padding:36px 32px; max-width:420px; width:100%;
+    box-shadow:0 20px 60px rgba(0,0,0,.2);
+  }
+  .modal h2{font-size:19px; margin-bottom:6px;}
+  .modal p.sub{color:var(--text-sub); font-size:13px; margin-bottom:22px;}
+  .branch-option{
+    display:flex; align-items:center; gap:12px; padding:16px; border:2px solid var(--border);
+    border-radius:12px; margin-bottom:12px; background:none; width:100%; text-align:right;
+    font-size:15px; font-weight:600; color:var(--text); transition:border-color .15s;
+  }
+  .branch-option:hover{border-color:var(--accent);}
+  .branch-option .ic{font-size:22px;}
+
+  /* ---------- mobile ---------- */
+  .scrim{display:none; position:fixed; inset:0; background:rgba(20,25,50,.4); z-index:35;}
+  @media (max-width:860px){
+    .sidebar{transform:translateX(-230px);}
+    .sidebar.open{transform:translateX(0);}
+    .main{margin-left:0;}
+    .hamburger{display:block;}
+    .scrim.show{display:block;}
+    .content{padding:20px 16px;}
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <div class="scrim" id="scrim"></div>
+
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <div class="name">🔧 พี.เอส ออโต้ไทร์</div>
+      <span class="branch-tag" id="branchTag">ยังไม่เลือกสาขา</span>
+    </div>
+    <nav class="nav" id="nav">
+      <button class="nav-item" data-page="sale"><span class="ic">🧾</span><span>ขายสินค้า / ตัดสต๊อก</span></button>
+      <button class="nav-item" data-page="restock"><span class="ic">📥</span><span>รับของเข้า / เพิ่มสต๊อก</span></button>
+      <button class="nav-item" data-page="products"><span class="ic">📋</span><span>รายการสินค้า</span></button>
+      <button class="nav-item" data-page="reports"><span class="ic">📊</span><span>รายงาน</span></button>
+    </nav>
+    <div class="sidebar-foot">เก็บข้อมูลในเครื่องนี้เท่านั้น</div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <div style="display:flex; align-items:center; gap:12px;">
+        <button class="hamburger" id="hamburger">☰</button>
+        <h2 id="pageTitle">ขายสินค้า / ตัดสต๊อก</h2>
+      </div>
+      <div class="topbar-right">
+        <span class="sync-status" id="syncStatus"></span>
+        <span class="badge zero" id="lowStockBadge">0 สต๊อกต่ำ</span>
+      </div>
+    </div>
+    <div class="content" id="content">
+      <!-- filled by JS per page -->
+    </div>
+  </div>
+
+</div>
+
+<!-- branch setup modal -->
+<div class="overlay" id="branchOverlay" style="display:none;">
+  <div class="modal">
+    <h2>เครื่องนี้คือสาขาไหน?</h2>
+    <p class="sub">เลือกครั้งเดียว ระบบจะจำไว้และแท็กทุกรายการที่บันทึกจากเครื่องนี้</p>
+    <button class="branch-option" data-branch="phrabat"><span class="ic">🏬</span><span>สาขาพระบาท</span></button>
+    <button class="branch-option" data-branch="lotus_pongsanuk"><span class="ic">🏬</span><span>สาขาโลตัสปงสนุก</span></button>
+  </div>
+</div>
+
+<script>
+  // วางค่าจาก Supabase ตรงนี้หลังสร้างโปรเจกต์เสร็จ (Project URL และ anon public key)
+  // ถ้าปล่อยว่างไว้ แอพจะทำงานแบบเก็บข้อมูลในเครื่องอย่างเดียวเหมือนเดิม ไม่พังอะไร
+  const SUPABASE_URL = "https://ofjsvfnthrokggugynjn.supabase.co";
+  const SUPABASE_ANON_KEY = "sb_publishable_e_pe4MUnEXPe_HYPf2Z6JQ_HWu46406";
+
+  const STORAGE_KEY = "psautotyre_stock";
+  const BRANCH_NAMES = { phrabat: "สาขาพระบาท", lotus_pongsanuk: "สาขาโลตัสปงสนุก" };
+  const PAGE_TITLES = {
+    sale: "ขายสินค้า / ตัดสต๊อก",
+    restock: "รับของเข้า / เพิ่มสต๊อก",
+    products: "รายการสินค้า",
+    reports: "รายงาน"
+  };
+  const CATEGORIES = [
+    "ยาง", "น้ำมันเครื่อง", "น้ำมันเบรก", "ผ้าเบรก",
+    "ไส้กรองน้ำมันเครื่อง", "กรองอากาศ", "กรองแอร์",
+    "น้ำยาล้างเบรก", "น้ำยาล้างเครื่องยนต์ (Engine Flush)",
+    "อะไหล่ฟุ่มเฟือย", "อะไหล่ทั่วไป"
+  ];
+  const LOW_STOCK_THRESHOLD = 3;
+  // หมวดที่ต้องใช้ "รหัสสินค้า" (พาร์ทนัมเบอร์กรอง) เพราะระบุด้วยรุ่นรถ ไม่ใช่ชื่อรุ่นสินค้าแบบน้ำมัน/ยาง
+  const CODE_CATEGORIES = ["ไส้กรองน้ำมันเครื่อง", "กรองอากาศ", "กรองแอร์"];
+
+  function genId(){
+    return "p_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 7);
+  }
+
+  function downloadCsv(filename, rows){
+    const csv = "﻿" + rows.map(r => r.map(cell => {
+      const s = String(cell ?? "");
+      return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+    }).join(",")).join("\r\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  function loadData(){
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw){
+      const initial = { branch: null, products: [], transactions: [] };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(initial));
+      return initial;
+    }
+    return JSON.parse(raw);
+  }
+  function saveData(data){
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    syncToServer(data);
+  }
+
+  function supabaseConfigured(){
+    return !!(SUPABASE_URL && SUPABASE_ANON_KEY);
+  }
+  function supabaseHeaders(withContentType){
+    const h = { "apikey": SUPABASE_ANON_KEY, "Authorization": `Bearer ${SUPABASE_ANON_KEY}` };
+    if(withContentType) h["Content-Type"] = "application/json";
+    return h;
+  }
+
+  function updateSyncStatus(mode){
+    const el = document.getElementById("syncStatus");
+    if(!supabaseConfigured()){ el.textContent = ""; el.className = "sync-status"; return; }
+    const labels = { syncing: "กำลังซิงก์...", online: "ออนไลน์ • ซิงก์แล้ว", offline: "ออฟไลน์ • ยังไม่ได้ซิงก์" };
+    el.textContent = labels[mode] ? `● ${labels[mode]}` : "";
+    el.className = "sync-status " + mode;
+  }
+
+  // อัปเดต/เพิ่มแถวของสาขานี้ขึ้นเซิร์ฟเวอร์เท่านั้น (upsert) — ไม่ลบข้อมูลเดิมโดยอัตโนมัติเด็ดขาด
+  // การลบทำเฉพาะตอนผู้ใช้กดลบสินค้าจริงๆ ผ่าน deleteProductRemote() เท่านั้น
+  async function syncToServer(data){
+    if(!supabaseConfigured() || !data.branch) return;
+    updateSyncStatus("syncing");
+    try{
+      const productsWithBranch = data.products.map(p => ({ ...p, branch: data.branch }));
+      const transactionsWithBranch = data.transactions.map(t => ({ ...t, branch: data.branch }));
+      let ok = true;
+
+      if(productsWithBranch.length > 0){
+        const r = await fetch(`${SUPABASE_URL}/rest/v1/products?on_conflict=id`, {
+          method: "POST",
+          headers: { ...supabaseHeaders(true), "Prefer": "resolution=merge-duplicates" },
+          body: JSON.stringify(productsWithBranch)
+        });
+        ok = ok && r.ok;
+      }
+      if(transactionsWithBranch.length > 0){
+        const r = await fetch(`${SUPABASE_URL}/rest/v1/transactions?on_conflict=id`, {
+          method: "POST",
+          headers: { ...supabaseHeaders(true), "Prefer": "resolution=merge-duplicates" },
+          body: JSON.stringify(transactionsWithBranch)
+        });
+        ok = ok && r.ok;
+      }
+      updateSyncStatus(ok ? "online" : "offline");
+    }catch(err){
+      updateSyncStatus("offline");
+    }
+  }
+
+  // ลบสินค้ารายการเดียวออกจากเซิร์ฟเวอร์ — เรียกเฉพาะตอนผู้ใช้กดปุ่ม "ลบ" สินค้าจริงๆ เท่านั้น
+  async function deleteProductRemote(productId){
+    if(!supabaseConfigured()) return;
+    try{
+      await fetch(`${SUPABASE_URL}/rest/v1/products?id=eq.${encodeURIComponent(productId)}`, { method: "DELETE", headers: supabaseHeaders() });
+    }catch(err){ /* เงียบไว้ — ครั้งถัดไปที่ syncFromServer จะยังเห็นรายการนี้ ลบซ้ำได้ */ }
+  }
+
+  async function syncFromServer(){
+    if(!supabaseConfigured() || !state.branch) return;
+    updateSyncStatus("syncing");
+    try{
+      const branchFilter = `branch=eq.${encodeURIComponent(state.branch)}&select=*`;
+      const [pRes, tRes] = await Promise.all([
+        fetch(`${SUPABASE_URL}/rest/v1/products?${branchFilter}`, { headers: supabaseHeaders() }),
+        fetch(`${SUPABASE_URL}/rest/v1/transactions?${branchFilter}`, { headers: supabaseHeaders() })
+      ]);
+      if(!pRes.ok || !tRes.ok) throw new Error("sync failed");
+      const products = await pRes.json();
+      const transactions = await tRes.json();
+      state.products = products.map(p => ({ ...p, costPrice: Number(p.costPrice), sellPrice: Number(p.sellPrice), qty: Number(p.qty) }));
+      state.transactions = transactions.map(t => ({ ...t, qty: Number(t.qty), unitPrice: Number(t.unitPrice), total: Number(t.total) }));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      updateSyncStatus("online");
+      if(["sale","restock","products","reports"].includes(currentPage)) renderPage(currentPage);
+      updateLowStockBadge();
+    }catch(err){
+      updateSyncStatus("offline");
+    }
+  }
+
+  let state = loadData();
+  let currentPage = "sale";
+
+  function renderBranchTag(){
+    const tag = document.getElementById("branchTag");
+    tag.textContent = state.branch ? BRANCH_NAMES[state.branch] : "ยังไม่เลือกสาขา";
+  }
+
+  function checkBranchSetup(){
+    const overlay = document.getElementById("branchOverlay");
+    if(!state.branch){
+      overlay.style.display = "flex";
+    } else {
+      overlay.style.display = "none";
+    }
+  }
+
+  document.querySelectorAll(".branch-option").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      state.branch = btn.dataset.branch;
+      saveData(state);
+      renderBranchTag();
+      checkBranchSetup();
+      syncFromServer();
+    });
+  });
+
+  function renderPage(page){
+    currentPage = page;
+    document.getElementById("pageTitle").textContent = PAGE_TITLES[page];
+    document.querySelectorAll(".nav-item").forEach(b=>{
+      b.classList.toggle("active", b.dataset.page === page);
+    });
+
+    if(page === "products"){
+      renderProductsPage();
+    } else if(page === "restock"){
+      renderRestockPage();
+    } else if(page === "sale"){
+      renderSalePage();
+    } else if(page === "reports"){
+      renderReportsPage();
+    }
+
+    // close mobile sidebar after nav
+    document.getElementById("sidebar").classList.remove("open");
+    document.getElementById("scrim").classList.remove("show");
+  }
+
+  /* ================= ตัวกรองหมวด/ยี่ห้อ/รุ่น (ใช้ร่วมกันหลายหน้า) ================= */
+  function distinctSorted(arr){
+    return [...new Set(arr.filter(Boolean))].sort((a, b) => a.localeCompare(b, "th"));
+  }
+  function getDistinctBrands(products, category){
+    const list = (!category || category === "all") ? products : products.filter(p => p.category === category);
+    return distinctSorted(list.map(p => p.brand));
+  }
+  function getDistinctModels(products, category, brand){
+    let list = products;
+    if(category && category !== "all") list = list.filter(p => p.category === category);
+    if(brand && brand !== "all") list = list.filter(p => p.brand === brand);
+    return distinctSorted(list.map(p => p.model));
+  }
+  function getDistinctSizes(products, category, brand, model){
+    let list = products;
+    if(category && category !== "all") list = list.filter(p => p.category === category);
+    if(brand && brand !== "all") list = list.filter(p => p.brand === brand);
+    if(model && model !== "all") list = list.filter(p => p.model === model);
+    return distinctSorted(list.map(p => p.size));
+  }
+  function filterSelectHTML(id, label, options, selected){
+    return `
+      <div>
+        <label class="field-label">${label}</label>
+        <select class="select-input" id="${id}" style="width:auto;">
+          <option value="all">ทั้งหมด</option>
+          ${options.map(o => `<option value="${o}" ${o === selected ? "selected" : ""}>${o}</option>`).join("")}
+        </select>
+      </div>
+    `;
+  }
+  function applyCategoryBrandModelFilter(products, filters){
+    let list = products;
+    if(filters.category && filters.category !== "all") list = list.filter(p => p.category === filters.category);
+    if(filters.brand && filters.brand !== "all") list = list.filter(p => p.brand === filters.brand);
+    if(filters.model && filters.model !== "all") list = list.filter(p => p.model === filters.model);
+    if(filters.size && filters.size !== "all") list = list.filter(p => p.size === filters.size);
+    return list;
+  }
+
+  /* ================= รายการสินค้า ================= */
+  let productCategoryFilter = "all";
+  let productBrandFilter = "all";
+  let productModelFilter = "all";
+  let productSizeFilter = "all";
+  let editingProductId = null;
+  let pendingImageFile = null;
+  let pendingImageRemoved = false;
+
+  const IMAGE_BUCKET = "product-images";
+
+  // ย่อรูปให้ไม่ใหญ่เกินไปก่อนอัปโหลด (ประหยัดเน็ต/พื้นที่เก็บ)
+  function resizeImageFile(file, maxDim, quality){
+    return new Promise((resolve, reject)=>{
+      const img = new Image();
+      const reader = new FileReader();
+      reader.onload = ()=>{ img.src = reader.result; };
+      reader.onerror = reject;
+      img.onload = ()=>{
+        let { width, height } = img;
+        if(width > height && width > maxDim){ height = Math.round(height * maxDim / width); width = maxDim; }
+        else if(height > maxDim){ width = Math.round(width * maxDim / height); height = maxDim; }
+        const canvas = document.createElement("canvas");
+        canvas.width = width; canvas.height = height;
+        canvas.getContext("2d").drawImage(img, 0, 0, width, height);
+        canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error("resize failed")), "image/jpeg", quality);
+      };
+      img.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function uploadProductImage(productId, file){
+    const blob = await resizeImageFile(file, 800, 0.75);
+    const path = `${productId}_${Date.now()}.jpg`;
+    const res = await fetch(`${SUPABASE_URL}/storage/v1/object/${IMAGE_BUCKET}/${path}`, {
+      method: "POST",
+      headers: { ...supabaseHeaders(), "Content-Type": "image/jpeg" },
+      body: blob
+    });
+    if(!res.ok) throw new Error("upload failed: " + (await res.text()));
+    return `${SUPABASE_URL}/storage/v1/object/public/${IMAGE_BUCKET}/${path}`;
+  }
+
+  function renderProductsPage(){
+    const content = document.getElementById("content");
+    content.innerHTML = `
+      <div class="card" style="margin-bottom:18px;">
+        <label class="field-label">สแกนบาร์โค้ด</label>
+        <input class="text-input" id="p_barcode" placeholder="สแกนหรือพิมพ์บาร์โค้ดแล้วกด Enter — เจอสินค้าเดิมจะเปิดแก้ไขให้ทันที ไม่เจอจะเปิดฟอร์มเพิ่มใหม่พร้อมกรอกบาร์โค้ดให้">
+      </div>
+      <div class="card" style="margin-bottom:18px;">
+        <div class="toolbar">
+          <div class="toolbar-left" id="productFilters"></div>
+          <div class="toolbar-right">
+            <button class="btn-secondary" id="exportCsvBtn">⬇️ ออกรายงาน CSV</button>
+            <button class="btn-primary" id="addProductBtn">+ เพิ่มสินค้า</button>
+          </div>
+        </div>
+      </div>
+      <div class="card" id="productFormCard" style="display:none; margin-bottom:18px;">
+        <h3 id="formTitle" style="font-size:15px; margin-bottom:16px;">เพิ่มสินค้าใหม่</h3>
+        <div style="display:flex; gap:16px; align-items:flex-start; margin-bottom:16px;">
+          <img id="f_imagePreview" src="" alt="" style="width:88px; height:88px; border-radius:12px; object-fit:cover; background:#f2f4f9; border:1px solid var(--border); display:none;">
+          <div id="f_imagePlaceholder" style="width:88px; height:88px; border-radius:12px; background:#f2f4f9; border:1px solid var(--border); display:flex; align-items:center; justify-content:center; font-size:28px; flex-shrink:0;">📦</div>
+          <div>
+            <label class="field-label">รูปภาพสินค้า (ถ้ามี)</label>
+            <input type="file" accept="image/*" id="f_image" class="text-input" style="padding:7px;">
+            <button class="btn-link-text" id="removeImageBtn" style="margin-top:6px; display:none;">ลบรูปนี้</button>
+          </div>
+        </div>
+        <div class="form-grid">
+          <div>
+            <label class="field-label">หมวดสินค้า</label>
+            <select class="select-input" id="f_category">
+              ${CATEGORIES.map(c => `<option value="${c}">${c}</option>`).join("")}
+            </select>
+          </div>
+          <div>
+            <label class="field-label">ยี่ห้อ</label>
+            <input class="text-input" id="f_brand" placeholder="เช่น Shell">
+          </div>
+          <div>
+            <label class="field-label">รุ่น</label>
+            <input class="text-input" id="f_model" placeholder="เช่น Helix HX7">
+          </div>
+          <div>
+            <label class="field-label">ขนาด</label>
+            <input class="text-input" id="f_size" placeholder="เช่น 4L">
+          </div>
+          <div id="f_code_group" style="display:none;">
+            <label class="field-label">รหัสสินค้า</label>
+            <input class="text-input" id="f_code" placeholder="เช่น BO-211">
+          </div>
+          <div>
+            <label class="field-label">บาร์โค้ด (ถ้ามี)</label>
+            <input class="text-input" id="f_barcode" placeholder="สแกนหรือพิมพ์เลขบาร์โค้ด">
+          </div>
+          <div>
+            <label class="field-label">ราคาซื้อ (บาท)</label>
+            <input class="text-input" id="f_cost" type="number" min="0" step="0.01" placeholder="0">
+          </div>
+          <div>
+            <label class="field-label">ราคาขาย (บาท)</label>
+            <input class="text-input" id="f_sell" type="number" min="0" step="0.01" placeholder="0">
+          </div>
+          <div>
+            <label class="field-label">จำนวนคงเหลือ</label>
+            <input class="text-input" id="f_qty" type="number" min="0" step="1" placeholder="0">
+          </div>
+        </div>
+        <div class="form-actions">
+          <button class="btn-primary" id="saveProductBtn">บันทึก</button>
+          <button class="btn-secondary" id="cancelProductBtn">ยกเลิก</button>
+        </div>
+      </div>
+      <div class="card" style="padding:0; overflow-x:auto;">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>รูป</th><th>หมวดสินค้า</th><th>ยี่ห้อ</th><th>รุ่น</th><th>ขนาด</th><th>รหัสสินค้า</th><th>บาร์โค้ด</th>
+              <th class="num">ราคาซื้อ</th><th class="num">ราคาขาย</th><th class="num">คงเหลือ</th><th></th>
+            </tr>
+          </thead>
+          <tbody id="productTableBody"></tbody>
+        </table>
+      </div>
+    `;
+
+    renderProductFilters();
+    document.getElementById("addProductBtn").addEventListener("click", ()=> openProductForm(null));
+    document.getElementById("cancelProductBtn").addEventListener("click", closeProductForm);
+    document.getElementById("saveProductBtn").addEventListener("click", saveProductForm);
+    document.getElementById("exportCsvBtn").addEventListener("click", exportProductsCsv);
+    document.getElementById("f_category").addEventListener("change", (e)=>{
+      document.getElementById("f_code_group").style.display = CODE_CATEGORIES.includes(e.target.value) ? "block" : "none";
+    });
+    document.getElementById("f_image").addEventListener("change", (e)=>{
+      const file = e.target.files[0];
+      if(!file) return;
+      pendingImageFile = file;
+      pendingImageRemoved = false;
+      const reader = new FileReader();
+      reader.onload = ()=>{
+        const preview = document.getElementById("f_imagePreview");
+        preview.src = reader.result;
+        preview.style.display = "block";
+        document.getElementById("f_imagePlaceholder").style.display = "none";
+        document.getElementById("removeImageBtn").style.display = "inline";
+      };
+      reader.readAsDataURL(file);
+    });
+    document.getElementById("removeImageBtn").addEventListener("click", ()=>{
+      pendingImageFile = null;
+      pendingImageRemoved = true;
+      document.getElementById("f_image").value = "";
+      document.getElementById("f_imagePreview").style.display = "none";
+      document.getElementById("f_imagePlaceholder").style.display = "flex";
+      document.getElementById("removeImageBtn").style.display = "none";
+    });
+    document.getElementById("p_barcode").addEventListener("keydown", (e)=>{
+      if(e.key !== "Enter") return;
+      e.preventDefault();
+      handleProductBarcodeScan(e.target.value.trim());
+      e.target.value = "";
+    });
+
+    renderProductTable();
+    document.getElementById("p_barcode").focus();
+  }
+
+  function handleProductBarcodeScan(code){
+    if(!code) return;
+    const existing = state.products.find(p => p.barcode && p.barcode === code);
+    if(existing){
+      openProductForm(existing.id);
+    } else {
+      openProductForm(null, code);
+    }
+  }
+
+  function renderProductFilters(){
+    const box = document.getElementById("productFilters");
+    const brands = getDistinctBrands(state.products, productCategoryFilter);
+    const models = getDistinctModels(state.products, productCategoryFilter, productBrandFilter);
+    const sizes = getDistinctSizes(state.products, productCategoryFilter, productBrandFilter, productModelFilter);
+    box.innerHTML =
+      filterSelectHTML("productCategoryFilter", "กรองตามหมวด", CATEGORIES, productCategoryFilter) +
+      filterSelectHTML("productBrandFilter", "กรองตามยี่ห้อ", brands, productBrandFilter) +
+      filterSelectHTML("productModelFilter", "กรองตามรุ่น", models, productModelFilter) +
+      filterSelectHTML("productSizeFilter", "กรองตามขนาด", sizes, productSizeFilter);
+
+    document.getElementById("productCategoryFilter").addEventListener("change", (e)=>{
+      productCategoryFilter = e.target.value;
+      productBrandFilter = "all";
+      productModelFilter = "all";
+      productSizeFilter = "all";
+      renderProductFilters();
+      renderProductTable();
+    });
+    document.getElementById("productBrandFilter").addEventListener("change", (e)=>{
+      productBrandFilter = e.target.value;
+      productModelFilter = "all";
+      productSizeFilter = "all";
+      renderProductFilters();
+      renderProductTable();
+    });
+    document.getElementById("productModelFilter").addEventListener("change", (e)=>{
+      productModelFilter = e.target.value;
+      productSizeFilter = "all";
+      renderProductFilters();
+      renderProductTable();
+    });
+    document.getElementById("productSizeFilter").addEventListener("change", (e)=>{
+      productSizeFilter = e.target.value;
+      renderProductTable();
+    });
+  }
+
+  function getFilteredProducts(){
+    return applyCategoryBrandModelFilter(state.products, {
+      category: productCategoryFilter, brand: productBrandFilter, model: productModelFilter, size: productSizeFilter
+    });
+  }
+
+  function renderProductTable(){
+    const tbody = document.getElementById("productTableBody");
+    const items = getFilteredProducts();
+    if(items.length === 0){
+      tbody.innerHTML = `<tr><td colspan="11" class="empty-row">ยังไม่มีสินค้าในหมวดนี้ — กด "เพิ่มสินค้า" เพื่อเริ่มบันทึก</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = items.map(p => `
+      <tr>
+        <td>${p.imageUrl ? `<img src="${p.imageUrl}" alt="" style="width:36px; height:36px; border-radius:8px; object-fit:cover;">` : `<span style="display:inline-flex; width:36px; height:36px; border-radius:8px; background:#f2f4f9; align-items:center; justify-content:center; font-size:15px;">📦</span>`}</td>
+        <td><span class="cat-chip">${p.category}</span></td>
+        <td>${p.brand}</td>
+        <td>${p.model}</td>
+        <td>${p.size}</td>
+        <td>${p.code || "-"}</td>
+        <td>${p.barcode || "-"}</td>
+        <td class="num">${p.costPrice.toLocaleString("th-TH", {minimumFractionDigits:2})} ฿</td>
+        <td class="num">${p.sellPrice.toLocaleString("th-TH", {minimumFractionDigits:2})} ฿</td>
+        <td class="num ${p.qty <= LOW_STOCK_THRESHOLD ? "qty-low" : ""}">${p.qty}</td>
+        <td style="white-space:nowrap;">
+          <button class="btn-link-text" data-edit="${p.id}">แก้ไข</button>
+          <button class="btn-danger-text" data-delete="${p.id}">ลบ</button>
+        </td>
+      </tr>
+    `).join("");
+
+    tbody.querySelectorAll("[data-edit]").forEach(btn=>{
+      btn.addEventListener("click", ()=> openProductForm(btn.dataset.edit));
+    });
+    tbody.querySelectorAll("[data-delete]").forEach(btn=>{
+      btn.addEventListener("click", ()=> deleteProduct(btn.dataset.delete));
+    });
+  }
+
+  function openProductForm(productId, prefillBarcode){
+    editingProductId = productId;
+    pendingImageFile = null;
+    pendingImageRemoved = false;
+    const card = document.getElementById("productFormCard");
+    const title = document.getElementById("formTitle");
+    card.style.display = "block";
+
+    document.getElementById("f_image").value = "";
+    const preview = document.getElementById("f_imagePreview");
+    const placeholder = document.getElementById("f_imagePlaceholder");
+    const removeBtn = document.getElementById("removeImageBtn");
+
+    if(productId){
+      const p = state.products.find(x => x.id === productId);
+      title.textContent = "แก้ไขสินค้า";
+      document.getElementById("f_category").value = p.category;
+      document.getElementById("f_brand").value = p.brand;
+      document.getElementById("f_model").value = p.model;
+      document.getElementById("f_size").value = p.size;
+      document.getElementById("f_code").value = p.code || "";
+      document.getElementById("f_barcode").value = p.barcode || "";
+      document.getElementById("f_cost").value = p.costPrice;
+      document.getElementById("f_sell").value = p.sellPrice;
+      document.getElementById("f_qty").value = p.qty;
+      if(p.imageUrl){
+        preview.src = p.imageUrl;
+        preview.style.display = "block";
+        placeholder.style.display = "none";
+        removeBtn.style.display = "inline";
+      } else {
+        preview.style.display = "none";
+        placeholder.style.display = "flex";
+        removeBtn.style.display = "none";
+      }
+    } else {
+      title.textContent = "เพิ่มสินค้าใหม่";
+      document.getElementById("f_category").value = CATEGORIES[0];
+      document.getElementById("f_brand").value = "";
+      document.getElementById("f_model").value = "";
+      document.getElementById("f_size").value = "";
+      document.getElementById("f_code").value = "";
+      document.getElementById("f_barcode").value = prefillBarcode || "";
+      document.getElementById("f_cost").value = "";
+      document.getElementById("f_sell").value = "";
+      document.getElementById("f_qty").value = "";
+      preview.style.display = "none";
+      placeholder.style.display = "flex";
+      removeBtn.style.display = "none";
+    }
+    document.getElementById("f_code_group").style.display = CODE_CATEGORIES.includes(document.getElementById("f_category").value) ? "block" : "none";
+    card.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }
+
+  function closeProductForm(){
+    editingProductId = null;
+    document.getElementById("productFormCard").style.display = "none";
+  }
+
+  async function saveProductForm(){
+    const brand = document.getElementById("f_brand").value.trim();
+    const model = document.getElementById("f_model").value.trim();
+    const size = document.getElementById("f_size").value.trim();
+    const code = document.getElementById("f_code").value.trim();
+    const barcode = document.getElementById("f_barcode").value.trim();
+    const category = document.getElementById("f_category").value;
+    const costPrice = parseFloat(document.getElementById("f_cost").value);
+    const sellPrice = parseFloat(document.getElementById("f_sell").value);
+    const qty = parseInt(document.getElementById("f_qty").value, 10);
+
+    if(!brand || !model){
+      alert("กรุณากรอกยี่ห้อและรุ่นของสินค้า");
+      return;
+    }
+    if(isNaN(costPrice) || costPrice < 0 || isNaN(sellPrice) || sellPrice < 0){
+      alert("กรุณากรอกราคาซื้อและราคาขายเป็นตัวเลขไม่ติดลบ");
+      return;
+    }
+    if(isNaN(qty) || qty < 0){
+      alert("กรุณากรอกจำนวนคงเหลือเป็นตัวเลขไม่ติดลบ");
+      return;
+    }
+    if(barcode && state.products.some(p => p.barcode === barcode && p.id !== editingProductId)){
+      alert("เลขบาร์โค้ดนี้มีสินค้าอื่นใช้อยู่แล้ว");
+      return;
+    }
+
+    const productId = editingProductId || genId();
+    const existing = editingProductId ? state.products.find(x => x.id === editingProductId) : null;
+    let imageUrl = existing ? (existing.imageUrl || "") : "";
+    if(pendingImageRemoved) imageUrl = "";
+
+    if(pendingImageFile){
+      const saveBtn = document.getElementById("saveProductBtn");
+      saveBtn.disabled = true;
+      saveBtn.textContent = "กำลังอัปโหลดรูป...";
+      try{
+        imageUrl = await uploadProductImage(productId, pendingImageFile);
+      }catch(err){
+        alert("อัปโหลดรูปไม่สำเร็จ (เช็คอินเทอร์เน็ต) — บันทึกข้อมูลส่วนอื่นให้แล้ว รูปลองอัปโหลดใหม่ทีหลังได้");
+      }
+      saveBtn.disabled = false;
+      saveBtn.textContent = "บันทึก";
+    }
+
+    if(existing){
+      Object.assign(existing, { category, brand, model, size, code, barcode, costPrice, sellPrice, qty, imageUrl });
+    } else {
+      state.products.push({ id: productId, category, brand, model, size, code, barcode, costPrice, sellPrice, qty, imageUrl });
+    }
+    saveData(state);
+    closeProductForm();
+    renderProductTable();
+    updateLowStockBadge();
+  }
+
+  function deleteProduct(productId){
+    const p = state.products.find(x => x.id === productId);
+    if(!p) return;
+    if(!confirm(`ลบสินค้า "${p.brand} ${p.model}" ออกจากรายการหรือไม่?`)) return;
+    state.products = state.products.filter(x => x.id !== productId);
+    saveData(state);
+    deleteProductRemote(productId);
+    renderProductTable();
+    updateLowStockBadge();
+  }
+
+  function exportProductsCsv(){
+    const rows = [["หมวดสินค้า", "ยี่ห้อ", "รุ่น", "ขนาด", "รหัสสินค้า", "บาร์โค้ด", "ราคาซื้อ", "ราคาขาย", "คงเหลือ"]];
+    getFilteredProducts().forEach(p => {
+      rows.push([p.category, p.brand, p.model, p.size, p.code || "", p.barcode || "", p.costPrice, p.sellPrice, p.qty]);
+    });
+    downloadCsv(`รายการสินค้า_${BRANCH_NAMES[state.branch] || ""}.csv`, rows);
+  }
+
+  /* ================= รับของเข้า / เพิ่มสต๊อก ================= */
+  let restockMode = "existing"; // "existing" | "new"
+  let restockCategoryFilter = "all";
+  let restockBrandFilter = "all";
+  let restockModelFilter = "all";
+  let restockSizeFilter = "all";
+
+  function productLabel(p){
+    const codePart = p.code ? ` [${p.code}]` : "";
+    return `${p.category} · ${p.brand} ${p.model} ${p.size}${codePart} (คงเหลือ ${p.qty})`;
+  }
+
+  function renderRestockPage(){
+    const content = document.getElementById("content");
+    const lastStaff = localStorage.getItem("psautotyre_last_staff") || "";
+
+    content.innerHTML = `
+      <div class="card" style="margin-bottom:18px;">
+        <label class="field-label">สแกนบาร์โค้ด</label>
+        <input class="text-input" id="r_barcode" placeholder="สแกนหรือพิมพ์บาร์โค้ดแล้วกด Enter" style="margin-bottom:16px;">
+
+        <div class="seg-toggle">
+          <button class="seg-btn ${restockMode === "existing" ? "active" : ""}" id="modeExisting">เลือกสินค้าเดิม</button>
+          <button class="seg-btn ${restockMode === "new" ? "active" : ""}" id="modeNew">เพิ่มสินค้าใหม่</button>
+        </div>
+
+        <div id="restockFields" style="margin-top:20px;"></div>
+
+        <div class="form-grid" style="margin-top:16px;">
+          <div>
+            <label class="field-label">จำนวนรับเข้า</label>
+            <input class="text-input" id="r_qty" type="number" min="1" step="1" placeholder="0">
+          </div>
+          <div>
+            <label class="field-label">ต้นทุนต่อหน่วย (บาท)</label>
+            <input class="text-input" id="r_cost" type="number" min="0" step="0.01" placeholder="0">
+          </div>
+          <div>
+            <label class="field-label">ผู้บันทึก</label>
+            <input class="text-input" id="r_staff" placeholder="ชื่อผู้บันทึก" value="${lastStaff}">
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button class="btn-primary" id="saveRestockBtn">บันทึกรับของเข้า</button>
+        </div>
+      </div>
+
+      <div class="card" style="padding:0; overflow-x:auto;">
+        <table class="data-table">
+          <thead>
+            <tr><th>วันที่-เวลา</th><th>สินค้า</th><th class="num">จำนวน</th><th class="num">ต้นทุนรวม</th><th>ผู้บันทึก</th></tr>
+          </thead>
+          <tbody id="restockHistoryBody"></tbody>
+        </table>
+      </div>
+    `;
+
+    document.getElementById("modeExisting").addEventListener("click", ()=>{ restockMode = "existing"; renderRestockPage(); });
+    document.getElementById("modeNew").addEventListener("click", ()=>{ restockMode = "new"; renderRestockPage(); });
+    document.getElementById("saveRestockBtn").addEventListener("click", saveRestock);
+    document.getElementById("r_barcode").addEventListener("keydown", (e)=>{
+      if(e.key !== "Enter") return;
+      e.preventDefault();
+      handleRestockBarcodeScan(e.target.value.trim());
+    });
+
+    renderRestockFields();
+    renderRestockHistory();
+    document.getElementById("r_barcode").focus();
+  }
+
+  function handleRestockBarcodeScan(code){
+    if(!code) return;
+    const product = state.products.find(p => p.barcode && p.barcode === code);
+    if(product){
+      const alreadySelected = restockMode === "existing" && document.getElementById("r_product")?.value === product.id;
+      const prevQty = alreadySelected ? (parseInt(document.getElementById("r_qty").value, 10) || 0) : 0;
+
+      restockMode = "existing";
+      restockCategoryFilter = "all";
+      restockBrandFilter = "all";
+      restockModelFilter = "all";
+      restockSizeFilter = "all";
+      renderRestockPage();
+      document.getElementById("r_product").value = product.id;
+      document.getElementById("r_qty").value = prevQty + 1;
+      document.getElementById("r_barcode").focus();
+    } else {
+      restockMode = "new";
+      renderRestockPage();
+      document.getElementById("r_new_barcode").value = code;
+      document.getElementById("r_brand").focus();
+    }
+  }
+
+  function renderRestockFields(){
+    const box = document.getElementById("restockFields");
+    if(restockMode === "existing"){
+      if(state.products.length === 0){
+        box.innerHTML = `<p style="color:var(--text-sub); font-size:13px;">ยังไม่มีสินค้าในระบบ — สลับไปแท็บ "เพิ่มสินค้าใหม่" เพื่อบันทึกครั้งแรก</p>`;
+        return;
+      }
+      const brands = getDistinctBrands(state.products, restockCategoryFilter);
+      const models = getDistinctModels(state.products, restockCategoryFilter, restockBrandFilter);
+      const sizes = getDistinctSizes(state.products, restockCategoryFilter, restockBrandFilter, restockModelFilter);
+      const filtered = applyCategoryBrandModelFilter(state.products, {
+        category: restockCategoryFilter, brand: restockBrandFilter, model: restockModelFilter, size: restockSizeFilter
+      });
+      box.innerHTML = `
+        <div class="form-grid" style="margin-bottom:16px;">
+          ${filterSelectHTML("restockCategoryFilter", "กรองตามหมวด", CATEGORIES, restockCategoryFilter)}
+          ${filterSelectHTML("restockBrandFilter", "กรองตามยี่ห้อ", brands, restockBrandFilter)}
+          ${filterSelectHTML("restockModelFilter", "กรองตามรุ่น", models, restockModelFilter)}
+          ${filterSelectHTML("restockSizeFilter", "กรองตามขนาด", sizes, restockSizeFilter)}
+        </div>
+        <label class="field-label">เลือกสินค้า</label>
+        <select class="select-input" id="r_product">
+          ${filtered.length === 0
+            ? `<option value="">ไม่พบสินค้าตามตัวกรอง</option>`
+            : filtered.map(p => `<option value="${p.id}">${productLabel(p)}</option>`).join("")}
+        </select>
+      `;
+      document.getElementById("restockCategoryFilter").addEventListener("change", (e)=>{
+        restockCategoryFilter = e.target.value;
+        restockBrandFilter = "all";
+        restockModelFilter = "all";
+        restockSizeFilter = "all";
+        renderRestockFields();
+      });
+      document.getElementById("restockBrandFilter").addEventListener("change", (e)=>{
+        restockBrandFilter = e.target.value;
+        restockModelFilter = "all";
+        restockSizeFilter = "all";
+        renderRestockFields();
+      });
+      document.getElementById("restockModelFilter").addEventListener("change", (e)=>{
+        restockModelFilter = e.target.value;
+        restockSizeFilter = "all";
+        renderRestockFields();
+      });
+      document.getElementById("restockSizeFilter").addEventListener("change", (e)=>{
+        restockSizeFilter = e.target.value;
+        renderRestockFields();
+      });
+    } else {
+      box.innerHTML = `
+        <div class="form-grid">
+          <div>
+            <label class="field-label">หมวดสินค้า</label>
+            <select class="select-input" id="r_category">
+              ${CATEGORIES.map(c => `<option value="${c}">${c}</option>`).join("")}
+            </select>
+          </div>
+          <div>
+            <label class="field-label">ยี่ห้อ</label>
+            <input class="text-input" id="r_brand" placeholder="เช่น Shell">
+          </div>
+          <div>
+            <label class="field-label">รุ่น</label>
+            <input class="text-input" id="r_model" placeholder="เช่น Helix HX7">
+          </div>
+          <div>
+            <label class="field-label">ขนาด</label>
+            <input class="text-input" id="r_size" placeholder="เช่น 4L">
+          </div>
+          <div id="r_code_group" style="display:none;">
+            <label class="field-label">รหัสสินค้า</label>
+            <input class="text-input" id="r_code" placeholder="เช่น BO-211">
+          </div>
+          <div>
+            <label class="field-label">บาร์โค้ด (ถ้ามี)</label>
+            <input class="text-input" id="r_new_barcode" placeholder="สแกนหรือพิมพ์เลขบาร์โค้ด">
+          </div>
+          <div>
+            <label class="field-label">ราคาขาย (บาท)</label>
+            <input class="text-input" id="r_sell" type="number" min="0" step="0.01" placeholder="0">
+          </div>
+        </div>
+      `;
+      const rCategorySelect = document.getElementById("r_category");
+      const rCodeGroup = document.getElementById("r_code_group");
+      rCodeGroup.style.display = CODE_CATEGORIES.includes(rCategorySelect.value) ? "block" : "none";
+      rCategorySelect.addEventListener("change", (e)=>{
+        rCodeGroup.style.display = CODE_CATEGORIES.includes(e.target.value) ? "block" : "none";
+      });
+    }
+  }
+
+  function renderRestockHistory(){
+    const tbody = document.getElementById("restockHistoryBody");
+    const items = state.transactions
+      .filter(t => t.type === "restock")
+      .slice()
+      .reverse()
+      .slice(0, 20);
+    if(items.length === 0){
+      tbody.innerHTML = `<tr><td colspan="5" class="empty-row">ยังไม่มีประวัติรับของเข้า</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = items.map(t => `
+      <tr>
+        <td>${new Date(t.datetime).toLocaleString("th-TH")}</td>
+        <td>${t.productName}</td>
+        <td class="num">${t.qty}</td>
+        <td class="num">${t.total.toLocaleString("th-TH", {minimumFractionDigits:2})} ฿</td>
+        <td>${t.staff}</td>
+      </tr>
+    `).join("");
+  }
+
+  function saveRestock(){
+    const qty = parseInt(document.getElementById("r_qty").value, 10);
+    const unitCost = parseFloat(document.getElementById("r_cost").value);
+    const staff = document.getElementById("r_staff").value.trim();
+
+    if(isNaN(qty) || qty <= 0){
+      alert("กรุณากรอกจำนวนรับเข้าเป็นตัวเลขมากกว่า 0");
+      return;
+    }
+    if(isNaN(unitCost) || unitCost < 0){
+      alert("กรุณากรอกต้นทุนต่อหน่วยเป็นตัวเลขไม่ติดลบ");
+      return;
+    }
+    if(!staff){
+      alert("กรุณากรอกชื่อผู้บันทึก");
+      return;
+    }
+
+    let product;
+
+    if(restockMode === "existing"){
+      const productId = document.getElementById("r_product").value;
+      product = state.products.find(p => p.id === productId);
+      if(!product){
+        alert("กรุณาเลือกสินค้า");
+        return;
+      }
+      product.qty += qty;
+    } else {
+      const category = document.getElementById("r_category").value;
+      const brand = document.getElementById("r_brand").value.trim();
+      const model = document.getElementById("r_model").value.trim();
+      const size = document.getElementById("r_size").value.trim();
+      const code = CODE_CATEGORIES.includes(category) ? document.getElementById("r_code").value.trim() : "";
+      const barcode = document.getElementById("r_new_barcode").value.trim();
+      const sellPrice = parseFloat(document.getElementById("r_sell").value);
+      if(!brand || !model){
+        alert("กรุณากรอกยี่ห้อและรุ่นของสินค้าใหม่");
+        return;
+      }
+      if(isNaN(sellPrice) || sellPrice < 0){
+        alert("กรุณากรอกราคาขายเป็นตัวเลขไม่ติดลบ");
+        return;
+      }
+      if(barcode && state.products.some(p => p.barcode === barcode)){
+        alert("เลขบาร์โค้ดนี้มีสินค้าอื่นใช้อยู่แล้ว");
+        return;
+      }
+      product = { id: genId(), category, brand, model, size, code, barcode, costPrice: unitCost, sellPrice, qty: qty };
+      state.products.push(product);
+    }
+
+    state.transactions.push({
+      id: genId(),
+      type: "restock",
+      datetime: new Date().toISOString(),
+      productId: product.id,
+      productName: `${product.brand} ${product.model} ${product.size}`,
+      qty: qty,
+      unitPrice: unitCost,
+      total: qty * unitCost,
+      staff: staff
+    });
+
+    localStorage.setItem("psautotyre_last_staff", staff);
+    saveData(state);
+
+    document.getElementById("r_qty").value = "";
+    document.getElementById("r_cost").value = "";
+    if(restockMode === "new"){
+      restockMode = "existing";
+      renderRestockPage();
+    } else {
+      renderRestockFields();
+      renderRestockHistory();
+    }
+    updateLowStockBadge();
+    document.getElementById("r_barcode").focus();
+  }
+
+  /* ================= ขายสินค้า / ตัดสต๊อก ================= */
+  let saleSearchText = "";
+  let saleCategoryFilter = "all";
+  let saleBrandFilter = "all";
+  let saleModelFilter = "all";
+  let saleSizeFilter = "all";
+
+  function renderSalePage(){
+    const content = document.getElementById("content");
+    const lastStaff = localStorage.getItem("psautotyre_last_staff") || "";
+
+    content.innerHTML = `
+      <div class="card" style="margin-bottom:18px;">
+        <label class="field-label">สแกนบาร์โค้ด</label>
+        <input class="text-input" id="s_barcode" placeholder="สแกนหรือพิมพ์บาร์โค้ดแล้วกด Enter" style="margin-bottom:16px;">
+
+        <div class="form-grid" id="saleFilters" style="margin-bottom:16px;"></div>
+
+        <label class="field-label">ค้นหาสินค้า</label>
+        <input class="text-input" id="s_search" placeholder="พิมพ์ยี่ห้อ รุ่น หรือหมวดสินค้า..." value="${saleSearchText}" style="margin-bottom:16px;">
+
+        <label class="field-label">เลือกสินค้า</label>
+        <select class="select-input" id="s_product"></select>
+
+        <div class="form-grid" style="margin-top:16px;">
+          <div>
+            <label class="field-label">จำนวนขาย</label>
+            <input class="text-input" id="s_qty" type="number" min="1" step="1" placeholder="0">
+          </div>
+          <div>
+            <label class="field-label">ผู้บันทึก</label>
+            <input class="text-input" id="s_staff" placeholder="ชื่อผู้บันทึก" value="${lastStaff}">
+          </div>
+          <div>
+            <label class="field-label">ยอดขายรวม</label>
+            <div id="s_total" style="padding:9px 0; font-family:'Bai Jamjuree',sans-serif; font-weight:700; font-size:16px;">0.00 ฿</div>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button class="btn-primary" id="saveSaleBtn">บันทึกการขาย</button>
+        </div>
+      </div>
+
+      <div class="card" style="padding:0; overflow-x:auto;">
+        <table class="data-table">
+          <thead>
+            <tr><th>วันที่-เวลา</th><th>สินค้า</th><th class="num">จำนวน</th><th class="num">ยอดขาย</th><th>ผู้บันทึก</th></tr>
+          </thead>
+          <tbody id="saleHistoryBody"></tbody>
+        </table>
+      </div>
+    `;
+
+    renderSaleFilters();
+    document.getElementById("s_search").addEventListener("input", (e)=>{
+      saleSearchText = e.target.value;
+      renderSaleProductOptions();
+    });
+    document.getElementById("s_qty").addEventListener("input", updateSaleTotal);
+    document.getElementById("s_qty").addEventListener("keydown", (e)=>{
+      if(e.key === "Enter"){ e.preventDefault(); saveSale(); }
+    });
+    document.getElementById("saveSaleBtn").addEventListener("click", saveSale);
+    document.getElementById("s_barcode").addEventListener("keydown", (e)=>{
+      if(e.key !== "Enter") return;
+      e.preventDefault();
+      handleBarcodeScan(e.target.value.trim());
+      e.target.value = "";
+    });
+
+    renderSaleProductOptions();
+    renderSaleHistory();
+    document.getElementById("s_barcode").focus();
+  }
+
+  function renderSaleFilters(){
+    const box = document.getElementById("saleFilters");
+    const brands = getDistinctBrands(state.products, saleCategoryFilter);
+    const models = getDistinctModels(state.products, saleCategoryFilter, saleBrandFilter);
+    const sizes = getDistinctSizes(state.products, saleCategoryFilter, saleBrandFilter, saleModelFilter);
+    box.innerHTML =
+      filterSelectHTML("saleCategoryFilter", "กรองตามหมวด", CATEGORIES, saleCategoryFilter) +
+      filterSelectHTML("saleBrandFilter", "กรองตามยี่ห้อ", brands, saleBrandFilter) +
+      filterSelectHTML("saleModelFilter", "กรองตามรุ่น", models, saleModelFilter) +
+      filterSelectHTML("saleSizeFilter", "กรองตามขนาด", sizes, saleSizeFilter);
+
+    document.getElementById("saleCategoryFilter").addEventListener("change", (e)=>{
+      saleCategoryFilter = e.target.value;
+      saleBrandFilter = "all";
+      saleModelFilter = "all";
+      saleSizeFilter = "all";
+      renderSaleFilters();
+      renderSaleProductOptions();
+    });
+    document.getElementById("saleBrandFilter").addEventListener("change", (e)=>{
+      saleBrandFilter = e.target.value;
+      saleModelFilter = "all";
+      saleSizeFilter = "all";
+      renderSaleFilters();
+      renderSaleProductOptions();
+    });
+    document.getElementById("saleModelFilter").addEventListener("change", (e)=>{
+      saleModelFilter = e.target.value;
+      saleSizeFilter = "all";
+      renderSaleFilters();
+      renderSaleProductOptions();
+    });
+    document.getElementById("saleSizeFilter").addEventListener("change", (e)=>{
+      saleSizeFilter = e.target.value;
+      renderSaleProductOptions();
+    });
+  }
+
+  function handleBarcodeScan(code){
+    if(!code) return;
+    const product = state.products.find(p => p.barcode && p.barcode === code);
+    if(!product){
+      alert(`ไม่พบสินค้าที่บาร์โค้ด "${code}"`);
+      return;
+    }
+    const alreadySelected = document.getElementById("s_product")?.value === product.id;
+    const prevQty = alreadySelected ? (parseInt(document.getElementById("s_qty").value, 10) || 0) : 0;
+    const nextQty = prevQty + 1;
+
+    saleSearchText = "";
+    saleCategoryFilter = "all";
+    saleBrandFilter = "all";
+    saleModelFilter = "all";
+    saleSizeFilter = "all";
+    document.getElementById("s_search").value = "";
+    renderSaleFilters();
+    renderSaleProductOptions();
+    document.getElementById("s_product").value = product.id;
+
+    if(nextQty > product.qty){
+      alert(`ของไม่พอขาย — "${product.brand} ${product.model}" เหลือในสต๊อกแค่ ${product.qty} ชิ้น`);
+      document.getElementById("s_qty").value = product.qty;
+    } else {
+      document.getElementById("s_qty").value = nextQty;
+    }
+    updateSaleTotal();
+    document.getElementById("s_barcode").focus();
+  }
+
+  function getSaleFilteredProducts(){
+    let list = applyCategoryBrandModelFilter(state.products, {
+      category: saleCategoryFilter, brand: saleBrandFilter, model: saleModelFilter, size: saleSizeFilter
+    });
+    const q = saleSearchText.trim().toLowerCase();
+    if(q){
+      list = list.filter(p => (p.category + p.brand + p.model + p.size + (p.code || "")).toLowerCase().includes(q));
+    }
+    return list;
+  }
+
+  function renderSaleProductOptions(){
+    const select = document.getElementById("s_product");
+    const items = getSaleFilteredProducts();
+    if(items.length === 0){
+      select.innerHTML = `<option value="">ไม่พบสินค้า</option>`;
+    } else {
+      select.innerHTML = items.map(p => `<option value="${p.id}">${productLabel(p)}</option>`).join("");
+    }
+    select.onchange = updateSaleTotal;
+    updateSaleTotal();
+  }
+
+  function updateSaleTotal(){
+    const select = document.getElementById("s_product");
+    const qtyInput = document.getElementById("s_qty");
+    const product = state.products.find(p => p.id === select.value);
+    const qty = parseInt(qtyInput.value, 10);
+    const total = product && !isNaN(qty) && qty > 0 ? product.sellPrice * qty : 0;
+    document.getElementById("s_total").textContent = total.toLocaleString("th-TH", {minimumFractionDigits:2}) + " ฿";
+  }
+
+  function renderSaleHistory(){
+    const tbody = document.getElementById("saleHistoryBody");
+    const items = state.transactions
+      .filter(t => t.type === "sale")
+      .slice()
+      .reverse()
+      .slice(0, 20);
+    if(items.length === 0){
+      tbody.innerHTML = `<tr><td colspan="5" class="empty-row">ยังไม่มีประวัติการขาย</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = items.map(t => `
+      <tr>
+        <td>${new Date(t.datetime).toLocaleString("th-TH")}</td>
+        <td>${t.productName}</td>
+        <td class="num">${t.qty}</td>
+        <td class="num">${t.total.toLocaleString("th-TH", {minimumFractionDigits:2})} ฿</td>
+        <td>${t.staff}</td>
+      </tr>
+    `).join("");
+  }
+
+  function saveSale(){
+    const productId = document.getElementById("s_product").value;
+    const qty = parseInt(document.getElementById("s_qty").value, 10);
+    const staff = document.getElementById("s_staff").value.trim();
+
+    const product = state.products.find(p => p.id === productId);
+    if(!product){
+      alert("กรุณาเลือกสินค้า");
+      return;
+    }
+    if(isNaN(qty) || qty <= 0){
+      alert("กรุณากรอกจำนวนขายเป็นตัวเลขมากกว่า 0");
+      return;
+    }
+    if(!staff){
+      alert("กรุณากรอกชื่อผู้บันทึก");
+      return;
+    }
+    if(qty > product.qty){
+      alert(`ของไม่พอขาย — "${product.brand} ${product.model}" เหลือในสต๊อกแค่ ${product.qty} ชิ้น`);
+      return;
+    }
+
+    product.qty -= qty;
+    state.transactions.push({
+      id: genId(),
+      type: "sale",
+      datetime: new Date().toISOString(),
+      productId: product.id,
+      productName: `${product.brand} ${product.model} ${product.size}`,
+      qty: qty,
+      unitPrice: product.sellPrice,
+      total: qty * product.sellPrice,
+      staff: staff
+    });
+
+    localStorage.setItem("psautotyre_last_staff", staff);
+    saveData(state);
+
+    document.getElementById("s_qty").value = "";
+    renderSaleProductOptions();
+    renderSaleHistory();
+    updateLowStockBadge();
+    document.getElementById("s_barcode").focus();
+  }
+
+  function updateLowStockBadge(){
+    const badge = document.getElementById("lowStockBadge");
+    const lowCount = state.products.filter(p => p.qty <= LOW_STOCK_THRESHOLD).length;
+    badge.textContent = `${lowCount} สต๊อกต่ำ`;
+    badge.classList.toggle("zero", lowCount === 0);
+  }
+
+  /* ================= รายงาน ================= */
+  let reportFrom = "";
+  let reportTo = "";
+
+  function getFilteredTransactions(){
+    return state.transactions.filter(t => {
+      const d = t.datetime.slice(0, 10);
+      if(reportFrom && d < reportFrom) return false;
+      if(reportTo && d > reportTo) return false;
+      return true;
+    }).slice().sort((a, b) => b.datetime.localeCompare(a.datetime));
+  }
+
+  function renderReportsPage(){
+    const content = document.getElementById("content");
+    content.innerHTML = `
+      <div class="card" style="margin-bottom:18px;">
+        <div class="toolbar">
+          <div class="toolbar-left">
+            <div>
+              <label class="field-label">ตั้งแต่วันที่</label>
+              <input class="text-input" type="date" id="rep_from" value="${reportFrom}">
+            </div>
+            <div>
+              <label class="field-label">ถึงวันที่</label>
+              <input class="text-input" type="date" id="rep_to" value="${reportTo}">
+            </div>
+            <div>
+              <label class="field-label">&nbsp;</label>
+              <button class="btn-secondary" id="rep_clear">ล้างตัวกรอง</button>
+            </div>
+          </div>
+          <div class="toolbar-right">
+            <button class="btn-secondary" id="rep_export">⬇️ ออกรายงาน CSV</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="summary-grid" style="margin-bottom:18px;">
+        <div class="summary-card">
+          <div class="label">ยอดขายรวม</div>
+          <div class="value success" id="rep_salesTotal">0.00 ฿</div>
+        </div>
+        <div class="summary-card">
+          <div class="label">ต้นทุนรับของเข้ารวม</div>
+          <div class="value accent" id="rep_restockTotal">0.00 ฿</div>
+        </div>
+        <div class="summary-card">
+          <div class="label">จำนวนรายการขาย</div>
+          <div class="value" id="rep_saleCount">0</div>
+        </div>
+        <div class="summary-card">
+          <div class="label">จำนวนรายการรับของเข้า</div>
+          <div class="value" id="rep_restockCount">0</div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:18px;">
+        <h3 style="font-size:15px; margin-bottom:14px;">สต๊อกคงเหลือแยกหมวด (ปัจจุบัน)</h3>
+        <div id="rep_categoryStock"></div>
+      </div>
+
+      <div class="card" style="padding:0; overflow-x:auto;">
+        <table class="data-table">
+          <thead>
+            <tr><th>วันที่-เวลา</th><th>ประเภท</th><th>สินค้า</th><th class="num">จำนวน</th><th class="num">ยอดเงิน</th><th>ผู้บันทึก</th></tr>
+          </thead>
+          <tbody id="rep_historyBody"></tbody>
+        </table>
+      </div>
+    `;
+
+    document.getElementById("rep_from").addEventListener("change", (e)=>{ reportFrom = e.target.value; renderReportData(); });
+    document.getElementById("rep_to").addEventListener("change", (e)=>{ reportTo = e.target.value; renderReportData(); });
+    document.getElementById("rep_clear").addEventListener("click", ()=>{
+      reportFrom = ""; reportTo = "";
+      document.getElementById("rep_from").value = "";
+      document.getElementById("rep_to").value = "";
+      renderReportData();
+    });
+    document.getElementById("rep_export").addEventListener("click", exportReportCsv);
+
+    renderReportData();
+  }
+
+  function renderReportData(){
+    const items = getFilteredTransactions();
+    const sales = items.filter(t => t.type === "sale");
+    const restocks = items.filter(t => t.type === "restock");
+    const salesTotal = sales.reduce((sum, t) => sum + t.total, 0);
+    const restockTotal = restocks.reduce((sum, t) => sum + t.total, 0);
+
+    document.getElementById("rep_salesTotal").textContent = salesTotal.toLocaleString("th-TH", {minimumFractionDigits:2}) + " ฿";
+    document.getElementById("rep_restockTotal").textContent = restockTotal.toLocaleString("th-TH", {minimumFractionDigits:2}) + " ฿";
+    document.getElementById("rep_saleCount").textContent = sales.length;
+    document.getElementById("rep_restockCount").textContent = restocks.length;
+
+    const catBox = document.getElementById("rep_categoryStock");
+    catBox.innerHTML = CATEGORIES.map(c => {
+      const qty = state.products.filter(p => p.category === c).reduce((sum, p) => sum + p.qty, 0);
+      return `<div class="cat-stock-row"><span>${c}</span><span class="qty">${qty} ชิ้น</span></div>`;
+    }).join("");
+
+    const tbody = document.getElementById("rep_historyBody");
+    if(items.length === 0){
+      tbody.innerHTML = `<tr><td colspan="6" class="empty-row">ไม่มีรายการเคลื่อนไหวในช่วงที่เลือก</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = items.map(t => `
+      <tr>
+        <td>${new Date(t.datetime).toLocaleString("th-TH")}</td>
+        <td><span class="type-chip ${t.type}">${t.type === "sale" ? "ขาย" : "รับของเข้า"}</span></td>
+        <td>${t.productName}</td>
+        <td class="num">${t.qty}</td>
+        <td class="num">${t.total.toLocaleString("th-TH", {minimumFractionDigits:2})} ฿</td>
+        <td>${t.staff}</td>
+      </tr>
+    `).join("");
+  }
+
+  function exportReportCsv(){
+    const rows = [["วันที่-เวลา", "ประเภท", "สินค้า", "จำนวน", "ยอดเงิน", "ผู้บันทึก"]];
+    getFilteredTransactions().forEach(t => {
+      rows.push([
+        new Date(t.datetime).toLocaleString("th-TH"),
+        t.type === "sale" ? "ขาย" : "รับของเข้า",
+        t.productName, t.qty, t.total, t.staff
+      ]);
+    });
+    downloadCsv(`รายงาน_${BRANCH_NAMES[state.branch] || ""}.csv`, rows);
+  }
+
+  document.querySelectorAll(".nav-item").forEach(btn=>{
+    btn.addEventListener("click", ()=> renderPage(btn.dataset.page));
+  });
+
+  document.getElementById("hamburger").addEventListener("click", ()=>{
+    document.getElementById("sidebar").classList.add("open");
+    document.getElementById("scrim").classList.add("show");
+  });
+  document.getElementById("scrim").addEventListener("click", ()=>{
+    document.getElementById("sidebar").classList.remove("open");
+    document.getElementById("scrim").classList.remove("show");
+  });
+
+  // init
+  renderBranchTag();
+  checkBranchSetup();
+  renderPage("sale");
+  updateLowStockBadge();
+  updateSyncStatus("");
+  if(state.branch) syncFromServer();
+</script>
+
+</body>
+</html>
