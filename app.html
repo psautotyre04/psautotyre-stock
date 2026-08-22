@@ -295,6 +295,23 @@
     return h;
   }
 
+  // Supabase REST caps unpaginated responses at 1000 rows — ต้องวน Range ทีละหน้าให้ครบ
+  // ไม่งั้นสินค้าที่แทรกเข้ามาทีหลัง (เช่นยี่ห้อที่เพิ่งเพิ่ม) จะหายไปจากสต๊อกที่ซิงก์มาแบบเงียบๆ
+  async function fetchAllSupabaseRows(url){
+    const PAGE = 1000;
+    let all = [];
+    let offset = 0;
+    while(true){
+      const res = await fetch(url, { headers: { ...supabaseHeaders(), "Range": `${offset}-${offset + PAGE - 1}` } });
+      if(!res.ok && res.status !== 206) throw new Error("fetch failed");
+      const batch = await res.json();
+      all = all.concat(batch);
+      if(batch.length < PAGE) break;
+      offset += PAGE;
+    }
+    return all;
+  }
+
   function updateSyncStatus(mode){
     const el = document.getElementById("syncStatus");
     if(!supabaseConfigured()){ el.textContent = ""; el.className = "sync-status"; return; }
@@ -348,13 +365,10 @@
     updateSyncStatus("syncing");
     try{
       const branchFilter = `branch=eq.${encodeURIComponent(state.branch)}&select=*`;
-      const [pRes, tRes] = await Promise.all([
-        fetch(`${SUPABASE_URL}/rest/v1/products?${branchFilter}`, { headers: supabaseHeaders() }),
-        fetch(`${SUPABASE_URL}/rest/v1/transactions?${branchFilter}`, { headers: supabaseHeaders() })
+      const [products, transactions] = await Promise.all([
+        fetchAllSupabaseRows(`${SUPABASE_URL}/rest/v1/products?${branchFilter}`),
+        fetchAllSupabaseRows(`${SUPABASE_URL}/rest/v1/transactions?${branchFilter}`)
       ]);
-      if(!pRes.ok || !tRes.ok) throw new Error("sync failed");
-      const products = await pRes.json();
-      const transactions = await tRes.json();
       state.products = products.map(p => ({ ...p, costPrice: Number(p.costPrice), sellPrice: Number(p.sellPrice), qty: Number(p.qty) }));
       state.transactions = transactions.map(t => ({ ...t, qty: Number(t.qty), unitPrice: Number(t.unitPrice), total: Number(t.total) }));
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
