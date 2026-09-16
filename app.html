@@ -1181,6 +1181,10 @@
 
         <div class="form-grid" style="margin-top:16px;">
           <div>
+            <label class="field-label">ราคาขาย</label>
+            <div id="s_price" style="padding:9px 0; font-family:'Bai Jamjuree',sans-serif; font-weight:700; font-size:16px;">0.00 ฿</div>
+          </div>
+          <div>
             <label class="field-label">จำนวนขาย</label>
             <input class="text-input" id="s_qty" type="number" min="1" step="1" placeholder="0">
           </div>
@@ -1330,6 +1334,11 @@
     const qty = parseInt(qtyInput.value, 10);
     const total = product && !isNaN(qty) && qty > 0 ? product.sellPrice * qty : 0;
     document.getElementById("s_total").textContent = total.toLocaleString("th-TH", {minimumFractionDigits:2}) + " ฿";
+
+    const priceEl = document.getElementById("s_price");
+    const unitPrice = product ? product.sellPrice : 0;
+    priceEl.textContent = unitPrice.toLocaleString("th-TH", {minimumFractionDigits:2}) + " ฿";
+    priceEl.style.color = (product && unitPrice === 0) ? "var(--danger, #dc2626)" : "";
   }
 
   function renderSaleHistory(){
