@@ -1181,8 +1181,8 @@
 
         <div class="form-grid" style="margin-top:16px;">
           <div>
-            <label class="field-label">ราคาขาย</label>
-            <div id="s_price" style="padding:9px 0; font-family:'Bai Jamjuree',sans-serif; font-weight:700; font-size:16px;">0.00 ฿</div>
+            <label class="field-label">ราคาขาย (แก้ไขได้)</label>
+            <input class="text-input" id="s_price" type="number" min="0" step="0.01" placeholder="0" style="font-family:'Bai Jamjuree',sans-serif; font-weight:700; font-size:16px;">
           </div>
           <div>
             <label class="field-label">จำนวนขาย</label>
@@ -1219,6 +1219,7 @@
       renderSaleProductOptions();
     });
     document.getElementById("s_qty").addEventListener("input", updateSaleTotal);
+    document.getElementById("s_price").addEventListener("input", updateSaleTotal);
     document.getElementById("s_qty").addEventListener("keydown", (e)=>{
       if(e.key === "Enter"){ e.preventDefault(); saveSale(); }
     });
@@ -1293,6 +1294,7 @@
     renderSaleFilters();
     renderSaleProductOptions();
     document.getElementById("s_product").value = product.id;
+    if(!alreadySelected) document.getElementById("s_price").value = product.sellPrice;
 
     if(nextQty > product.qty){
       alert(`ของไม่พอขาย — "${product.brand} ${product.model}" เหลือในสต๊อกแค่ ${product.qty} ชิ้น`);
@@ -1323,22 +1325,26 @@
     } else {
       select.innerHTML = items.map(p => `<option value="${p.id}">${productLabel(p)}</option>`).join("");
     }
-    select.onchange = updateSaleTotal;
+    select.onchange = onSaleProductChange;
+    onSaleProductChange();
+  }
+
+  // เปลี่ยนสินค้าที่เลือก -> ตั้งราคาขายเริ่มต้นจากราคาสินค้า แต่พนักงานหน้าร้านแก้ไขเป็นราคาจริง ณ ตอนขายได้
+  function onSaleProductChange(){
+    const select = document.getElementById("s_product");
+    const product = state.products.find(p => p.id === select.value);
+    document.getElementById("s_price").value = product ? product.sellPrice : "";
     updateSaleTotal();
   }
 
   function updateSaleTotal(){
-    const select = document.getElementById("s_product");
     const qtyInput = document.getElementById("s_qty");
-    const product = state.products.find(p => p.id === select.value);
+    const priceInput = document.getElementById("s_price");
     const qty = parseInt(qtyInput.value, 10);
-    const total = product && !isNaN(qty) && qty > 0 ? product.sellPrice * qty : 0;
+    const price = parseFloat(priceInput.value);
+    const total = !isNaN(qty) && qty > 0 && !isNaN(price) ? price * qty : 0;
     document.getElementById("s_total").textContent = total.toLocaleString("th-TH", {minimumFractionDigits:2}) + " ฿";
-
-    const priceEl = document.getElementById("s_price");
-    const unitPrice = product ? product.sellPrice : 0;
-    priceEl.textContent = unitPrice.toLocaleString("th-TH", {minimumFractionDigits:2}) + " ฿";
-    priceEl.style.color = (product && unitPrice === 0) ? "var(--danger, #dc2626)" : "";
+    priceInput.style.color = (isNaN(price) || price === 0) ? "var(--danger)" : "";
   }
 
   function renderSaleHistory(){
@@ -1366,6 +1372,7 @@
   function saveSale(){
     const productId = document.getElementById("s_product").value;
     const qty = parseInt(document.getElementById("s_qty").value, 10);
+    const unitPrice = parseFloat(document.getElementById("s_price").value);
     const staff = document.getElementById("s_staff").value.trim();
 
     const product = state.products.find(p => p.id === productId);
@@ -1375,6 +1382,10 @@
     }
     if(isNaN(qty) || qty <= 0){
       alert("กรุณากรอกจำนวนขายเป็นตัวเลขมากกว่า 0");
+      return;
+    }
+    if(isNaN(unitPrice) || unitPrice < 0){
+      alert("กรุณากรอกราคาขายเป็นตัวเลขไม่ติดลบ");
       return;
     }
     if(!staff){
@@ -1394,8 +1405,8 @@
       productId: product.id,
       productName: `${product.brand} ${product.model} ${product.size}`,
       qty: qty,
-      unitPrice: product.sellPrice,
-      total: qty * product.sellPrice,
+      unitPrice: unitPrice,
+      total: qty * unitPrice,
       staff: staff
     });
 
