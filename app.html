@@ -915,13 +915,17 @@
       <div class="card" style="padding:0; overflow-x:auto;">
         <table class="data-table">
           <thead>
-            <tr><th>วันที่-เวลา</th><th>สินค้า</th><th class="num">จำนวน</th><th class="num">ต้นทุนรวม</th><th>ผู้บันทึก</th></tr>
+            <tr><th id="restockDateHeader" style="cursor:pointer; user-select:none;">วันที่-เวลา <span id="restockSortArrow"></span></th><th>สินค้า</th><th class="num">จำนวน</th><th class="num">ต้นทุนรวม</th><th>ผู้บันทึก</th></tr>
           </thead>
           <tbody id="restockHistoryBody"></tbody>
         </table>
       </div>
     `;
 
+    document.getElementById("restockDateHeader").addEventListener("click", ()=>{
+      restockHistorySortDesc = !restockHistorySortDesc;
+      renderRestockHistory();
+    });
     document.getElementById("modeExisting").addEventListener("click", ()=>{ restockMode = "existing"; renderRestockPage(); });
     document.getElementById("modeNew").addEventListener("click", ()=>{ restockMode = "new"; renderRestockPage(); });
     document.getElementById("saveRestockBtn").addEventListener("click", saveRestock);
@@ -1053,12 +1057,15 @@
     }
   }
 
+  let restockHistorySortDesc = true;
+
   function renderRestockHistory(){
     const tbody = document.getElementById("restockHistoryBody");
+    document.getElementById("restockSortArrow").textContent = restockHistorySortDesc ? "▼" : "▲";
     const items = state.transactions
       .filter(t => t.type === "restock")
       .slice()
-      .reverse()
+      .sort((a, b) => restockHistorySortDesc ? b.datetime.localeCompare(a.datetime) : a.datetime.localeCompare(b.datetime))
       .slice(0, 20);
     if(items.length === 0){
       tbody.innerHTML = `<tr><td colspan="5" class="empty-row">ยังไม่มีประวัติรับของเข้า</td></tr>`;
@@ -1206,7 +1213,7 @@
       <div class="card" style="padding:0; overflow-x:auto;">
         <table class="data-table">
           <thead>
-            <tr><th>วันที่-เวลา</th><th>สินค้า</th><th class="num">จำนวน</th><th class="num">ยอดขาย</th><th>ผู้บันทึก</th></tr>
+            <tr><th id="saleDateHeader" style="cursor:pointer; user-select:none;">วันที่-เวลา <span id="saleSortArrow"></span></th><th>สินค้า</th><th class="num">จำนวน</th><th class="num">ยอดขาย</th><th>ผู้บันทึก</th></tr>
           </thead>
           <tbody id="saleHistoryBody"></tbody>
         </table>
@@ -1214,6 +1221,10 @@
     `;
 
     renderSaleFilters();
+    document.getElementById("saleDateHeader").addEventListener("click", ()=>{
+      saleHistorySortDesc = !saleHistorySortDesc;
+      renderSaleHistory();
+    });
     document.getElementById("s_search").addEventListener("input", (e)=>{
       saleSearchText = e.target.value;
       renderSaleProductOptions();
@@ -1347,12 +1358,15 @@
     priceInput.style.color = (isNaN(price) || price === 0) ? "var(--danger)" : "";
   }
 
+  let saleHistorySortDesc = true;
+
   function renderSaleHistory(){
     const tbody = document.getElementById("saleHistoryBody");
+    document.getElementById("saleSortArrow").textContent = saleHistorySortDesc ? "▼" : "▲";
     const items = state.transactions
       .filter(t => t.type === "sale")
       .slice()
-      .reverse()
+      .sort((a, b) => saleHistorySortDesc ? b.datetime.localeCompare(a.datetime) : a.datetime.localeCompare(b.datetime))
       .slice(0, 20);
     if(items.length === 0){
       tbody.innerHTML = `<tr><td colspan="5" class="empty-row">ยังไม่มีประวัติการขาย</td></tr>`;
@@ -1431,13 +1445,15 @@
   let reportFrom = "";
   let reportTo = "";
 
+  let reportHistorySortDesc = true;
+
   function getFilteredTransactions(){
     return state.transactions.filter(t => {
       const d = t.datetime.slice(0, 10);
       if(reportFrom && d < reportFrom) return false;
       if(reportTo && d > reportTo) return false;
       return true;
-    }).slice().sort((a, b) => b.datetime.localeCompare(a.datetime));
+    }).slice().sort((a, b) => reportHistorySortDesc ? b.datetime.localeCompare(a.datetime) : a.datetime.localeCompare(b.datetime));
   }
 
   function renderReportsPage(){
@@ -1492,7 +1508,7 @@
       <div class="card" style="padding:0; overflow-x:auto;">
         <table class="data-table">
           <thead>
-            <tr><th>วันที่-เวลา</th><th>ประเภท</th><th>สินค้า</th><th class="num">จำนวน</th><th class="num">ยอดเงิน</th><th>ผู้บันทึก</th></tr>
+            <tr><th id="repDateHeader" style="cursor:pointer; user-select:none;">วันที่-เวลา <span id="repSortArrow"></span></th><th>ประเภท</th><th>สินค้า</th><th class="num">จำนวน</th><th class="num">ยอดเงิน</th><th>ผู้บันทึก</th></tr>
           </thead>
           <tbody id="rep_historyBody"></tbody>
         </table>
@@ -1508,11 +1524,16 @@
       renderReportData();
     });
     document.getElementById("rep_export").addEventListener("click", exportReportCsv);
+    document.getElementById("repDateHeader").addEventListener("click", ()=>{
+      reportHistorySortDesc = !reportHistorySortDesc;
+      renderReportData();
+    });
 
     renderReportData();
   }
 
   function renderReportData(){
+    document.getElementById("repSortArrow").textContent = reportHistorySortDesc ? "▼" : "▲";
     const items = getFilteredTransactions();
     const sales = items.filter(t => t.type === "sale");
     const restocks = items.filter(t => t.type === "restock");

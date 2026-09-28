@@ -150,6 +150,7 @@
   let stockBrandFilter = "all";
   let stockModelFilter = "all";
   let stockSizeFilter = "all";
+  let dashTxnSortDesc = true;
 
   function supabaseHeaders(){
     return { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` };
@@ -360,7 +361,7 @@
         <div class="table-wrap">
           <table class="data-table">
             <thead>
-              <tr><th>วันที่-เวลา</th><th>สาขา</th><th>ประเภท</th><th>สินค้า</th><th class="num">จำนวน</th><th class="num">ยอดเงิน</th><th>ผู้บันทึก</th></tr>
+              <tr><th id="txnDateHeader" style="cursor:pointer; user-select:none;">วันที่-เวลา <span id="txnSortArrow">${dashTxnSortDesc ? "▼" : "▲"}</span></th><th>สาขา</th><th>ประเภท</th><th>สินค้า</th><th class="num">จำนวน</th><th class="num">ยอดเงิน</th><th>ผู้บันทึก</th></tr>
             </thead>
             <tbody>
               ${renderTransactionRows(transactions)}
@@ -371,6 +372,10 @@
     `;
 
     document.getElementById("exportStockCsvBtn").addEventListener("click", exportStockCsv);
+    document.getElementById("txnDateHeader").addEventListener("click", ()=>{
+      dashTxnSortDesc = !dashTxnSortDesc;
+      renderDashboard();
+    });
     renderStockFilters();
   }
 
@@ -516,7 +521,7 @@
   function renderTransactionRows(transactions){
     if(transactions.length === 0) return `<tr><td colspan="7" class="empty-row">ไม่มีรายการตามตัวกรองนี้</td></tr>`;
     return transactions
-      .slice().sort((a,b) => (b.datetime||"").localeCompare(a.datetime||""))
+      .slice().sort((a,b) => dashTxnSortDesc ? (b.datetime||"").localeCompare(a.datetime||"") : (a.datetime||"").localeCompare(b.datetime||""))
       .slice(0, 100)
       .map(t => `
         <tr>
