@@ -91,6 +91,7 @@
     border-radius:9px; background:#fff; color:var(--text); width:100%;
   }
   .select-input:focus, .text-input:focus{outline:none; border-color:var(--accent);}
+  .text-input[readonly]{background:#f5f6fa; color:var(--text-sub); cursor:not-allowed;}
   .btn-primary{
     background:var(--dark); color:#fff; border:none; padding:10px 18px; border-radius:9px;
     font-size:14px; font-weight:600; transition:background .15s;
@@ -227,6 +228,20 @@
   </div>
 </div>
 
+<!-- PIN dialog (รหัสแก้ไขจำนวนสินค้า) -->
+<div class="overlay" id="pinOverlay" style="display:none;">
+  <div class="modal">
+    <h2 id="pinTitle"></h2>
+    <p class="sub" id="pinSub"></p>
+    <div id="pinFields"></div>
+    <p id="pinError" style="color:var(--danger); font-size:13px; min-height:18px; margin:4px 0 10px;"></p>
+    <div class="form-actions" style="margin-top:0;">
+      <button class="btn-primary" id="pinOkBtn">ตกลง</button>
+      <button class="btn-secondary" id="pinCancelBtn">ยกเลิก</button>
+    </div>
+  </div>
+</div>
+
 <script>
   // วางค่าจาก Supabase ตรงนี้หลังสร้างโปรเจกต์เสร็จ (Project URL และ anon public key)
   // ถ้าปล่อยว่างไว้ แอพจะทำงานแบบเก็บข้อมูลในเครื่องอย่างเดียวเหมือนเดิม ไม่พังอะไร
@@ -312,6 +327,253 @@
     return all;
   }
 
+  /* ================= รหัสแก้ไขจำนวนสินค้า (หน้ารายการสินค้า) =================
+     เก็บเฉพาะค่าแฮชของรหัสในตาราง settings ของ Supabase (key = "qty_pin") ใช้ร่วมกันทุกเครื่อง
+     ไม่เก็บตัวเลขรหัสจริงในโค้ด/ฐานข้อมูล — กันแก้จำนวนพลาดจากหน้าแอพ ไม่ใช่ระบบความปลอดภัยเต็มรูปแบบ
+     (แอพนี้ไม่มีระบบล็อกอิน) */
+  const QTY_PIN_KEY = "qty_pin";
+  const PIN_CACHE_KEY = "psautotyre_qty_pin";   // ค่าล่าสุดที่รู้ (record หรือ "none") ไว้ใช้ตอนออฟไลน์
+
+  function ror32(x, n){ return (x >>> n) | (x << (32 - n)); }
+  function sha256Hex(str){
+    const K = [0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2];
+    const bytes = new TextEncoder().encode(str);
+    const len = bytes.length;
+    const buf = new Uint8Array(((len + 9 + 63) >> 6) << 6);
+    buf.set(bytes);
+    buf[len] = 0x80;
+    const dv = new DataView(buf.buffer);
+    dv.setUint32(buf.length - 8, Math.floor(len * 8 / 4294967296));
+    dv.setUint32(buf.length - 4, (len * 8) >>> 0);
+    const H = [0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19];
+    const w = new Uint32Array(64);
+    for(let off = 0; off < buf.length; off += 64){
+      for(let i = 0; i < 16; i++) w[i] = dv.getUint32(off + i * 4);
+      for(let i = 16; i < 64; i++){
+        const s0 = ror32(w[i-15], 7) ^ ror32(w[i-15], 18) ^ (w[i-15] >>> 3);
+        const s1 = ror32(w[i-2], 17) ^ ror32(w[i-2], 19) ^ (w[i-2] >>> 10);
+        w[i] = (w[i-16] + s0 + w[i-7] + s1) >>> 0;
+      }
+      let [a, b, c, d, e, f, g, h] = H;
+      for(let i = 0; i < 64; i++){
+        const S1 = ror32(e, 6) ^ ror32(e, 11) ^ ror32(e, 25);
+        const ch = (e & f) ^ (~e & g);
+        const t1 = (h + S1 + ch + K[i] + w[i]) >>> 0;
+        const S0 = ror32(a, 2) ^ ror32(a, 13) ^ ror32(a, 22);
+        const maj = (a & b) ^ (a & c) ^ (b & c);
+        const t2 = (S0 + maj) >>> 0;
+        h = g; g = f; f = e; e = (d + t1) >>> 0; d = c; c = b; b = a; a = (t1 + t2) >>> 0;
+      }
+      H[0] = (H[0] + a) >>> 0; H[1] = (H[1] + b) >>> 0; H[2] = (H[2] + c) >>> 0; H[3] = (H[3] + d) >>> 0;
+      H[4] = (H[4] + e) >>> 0; H[5] = (H[5] + f) >>> 0; H[6] = (H[6] + g) >>> 0; H[7] = (H[7] + h) >>> 0;
+    }
+    return H.map(x => x.toString(16).padStart(8, "0")).join("");
+  }
+
+  function makePinRecord(pin){
+    const salt = Array.from(crypto.getRandomValues(new Uint8Array(8))).map(b => b.toString(16).padStart(2, "0")).join("");
+    return `v1:${salt}:${sha256Hex(salt + ":" + pin)}`;
+  }
+  function checkPin(record, pin){
+    const parts = String(record).split(":");
+    return parts.length === 3 && parts[0] === "v1" && sha256Hex(parts[1] + ":" + pin) === parts[2];
+  }
+
+  function fetchWithTimeout(url, opts, ms){
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), ms || 6000);
+    return fetch(url, { ...opts, signal: ctrl.signal }).finally(() => clearTimeout(timer));
+  }
+
+  // status: "set" (มีรหัสแล้ว) | "unset" (ยังไม่ตั้งรหัส) | "notable" (ยังไม่มีตาราง settings) | "error" (เช็คไม่ได้ + ไม่เคยรู้ค่า)
+  async function loadQtyPin(){
+    if(!supabaseConfigured()) return { status: "unset" };
+    try{
+      const res = await fetchWithTimeout(`${SUPABASE_URL}/rest/v1/settings?key=eq.${QTY_PIN_KEY}&select=value`, { headers: supabaseHeaders() });
+      if(res.status === 404){ localStorage.setItem(PIN_CACHE_KEY, "none"); return { status: "notable" }; }
+      if(!res.ok) throw new Error("http " + res.status);
+      const rows = await res.json();
+      if(rows.length === 0){ localStorage.setItem(PIN_CACHE_KEY, "none"); return { status: "unset" }; }
+      localStorage.setItem(PIN_CACHE_KEY, rows[0].value);
+      return { status: "set", value: rows[0].value };
+    }catch(err){
+      const cached = localStorage.getItem(PIN_CACHE_KEY);
+      if(cached === "none") return { status: "unset", offline: true };
+      if(cached) return { status: "set", value: cached, offline: true };
+      return { status: "error" };
+    }
+  }
+
+  async function saveQtyPinRecord(record){
+    try{
+      const res = await fetchWithTimeout(`${SUPABASE_URL}/rest/v1/settings?on_conflict=key`, {
+        method: "POST",
+        headers: { ...supabaseHeaders(true), "Prefer": "resolution=merge-duplicates,return=minimal" },
+        body: JSON.stringify([{ key: QTY_PIN_KEY, value: record }])
+      });
+      if(res.status === 404) return "notable";
+      if(!res.ok) return "error";
+      localStorage.setItem(PIN_CACHE_KEY, record);
+      return "ok";
+    }catch(err){
+      return "error";
+    }
+  }
+
+  let pinFailCount = 0;
+  let pinBlockedUntil = 0;
+  function pinThrottleMessage(){
+    const left = Math.ceil((pinBlockedUntil - Date.now()) / 1000);
+    return left > 0 ? `กรอกรหัสผิดหลายครั้ง กรุณารออีก ${left} วินาทีแล้วลองใหม่` : null;
+  }
+  function registerPinResult(ok){
+    if(ok){ pinFailCount = 0; return; }
+    pinFailCount++;
+    if(pinFailCount >= 5){ pinBlockedUntil = Date.now() + 60000; pinFailCount = 0; }
+  }
+
+  // เปิดกล่องกรอกรหัส — คืนค่า {ชื่อช่อง: ค่า} เมื่อกดตกลงและผ่าน validate, คืน null ถ้ายกเลิก
+  function pinDialog(cfg){
+    return new Promise(resolve => {
+      const overlay = document.getElementById("pinOverlay");
+      const okBtn = document.getElementById("pinOkBtn");
+      const cancelBtn = document.getElementById("pinCancelBtn");
+      const errEl = document.getElementById("pinError");
+      document.getElementById("pinTitle").textContent = cfg.title;
+      document.getElementById("pinSub").textContent = cfg.sub || "";
+      const box = document.getElementById("pinFields");
+      box.innerHTML = cfg.fields.map(f => `
+        <div style="margin-bottom:12px;">
+          <label class="field-label">${f.label}</label>
+          <input class="text-input" type="password" autocomplete="off" data-pin-field="${f.name}">
+        </div>`).join("");
+      errEl.textContent = "";
+      const inputs = Array.from(box.querySelectorAll("input"));
+      const close = (val) => {
+        overlay.style.display = "none";
+        okBtn.onclick = null; cancelBtn.onclick = null; overlay.onkeydown = null;
+        box.innerHTML = "";
+        resolve(val);
+      };
+      const submit = async () => {
+        const values = {};
+        inputs.forEach(i => { values[i.dataset.pinField] = i.value; });
+        okBtn.disabled = true;
+        const msg = cfg.validate ? await cfg.validate(values) : null;
+        okBtn.disabled = false;
+        if(msg){ errEl.textContent = msg; inputs[0].value = ""; inputs[0].focus(); return; }
+        close(values);
+      };
+      okBtn.onclick = submit;
+      cancelBtn.onclick = () => close(null);
+      overlay.onkeydown = (e) => {
+        if(e.key === "Enter"){ e.preventDefault(); submit(); }
+        else if(e.key === "Escape"){ close(null); }
+      };
+      overlay.style.display = "flex";
+      inputs[0].focus();
+    });
+  }
+
+  // ----- ล็อกช่อง "จำนวนคงเหลือ" ในฟอร์มแก้ไข/เพิ่มสินค้า -----
+  let qtyLockActive = true;        // true = ต้องใช้รหัสก่อนถึงจะแก้จำนวนได้ (เริ่มต้นล็อกไว้ก่อนเสมอ)
+  let qtyUnlockedForForm = false;  // ปลดล็อกแล้วเฉพาะฟอร์มที่เปิดอยู่ตอนนี้ ปิด/เปิดฟอร์มใหม่ต้องใส่รหัสอีกครั้ง
+  let qtyLockToken = 0;
+
+  async function refreshQtyLock(){
+    const token = ++qtyLockToken;
+    qtyLockActive = true;
+    qtyUnlockedForForm = false;
+    const qtyInput = document.getElementById("f_qty");
+    const btn = document.getElementById("unlockQtyBtn");
+    const note = document.getElementById("f_qtyLockNote");
+    qtyInput.readOnly = true;
+    btn.style.display = "none";
+    note.textContent = "(กำลังตรวจสอบสิทธิ์...)";
+    if(!editingProductId) qtyInput.value = "0";
+
+    const rec = await loadQtyPin();
+    if(token !== qtyLockToken) return;   // ฟอร์มถูกปิด/เปิดใหม่ระหว่างรอ
+
+    if(rec.status === "unset" || rec.status === "notable"){
+      qtyLockActive = false;
+      qtyInput.readOnly = false;
+      if(!editingProductId && qtyInput.value === "0") qtyInput.value = "";
+      note.textContent = rec.status === "notable" ? "" : "(ยังไม่ได้ตั้งรหัส — กด \"🔑 รหัสแก้จำนวน\" เพื่อตั้ง)";
+      return;
+    }
+    if(rec.status === "set"){
+      btn.style.display = "inline-block";
+      note.textContent = "(ล็อก — ต้องใช้รหัสเพื่อแก้จำนวน)";
+      return;
+    }
+    note.textContent = "(ล็อก — ต้องต่อเน็ตเพื่อตรวจรหัส)";
+  }
+
+  async function unlockQty(){
+    const token = qtyLockToken;
+    const blocked = pinThrottleMessage();
+    if(blocked){ alert(blocked); return; }
+    const rec = await loadQtyPin();
+    if(token !== qtyLockToken) return;
+    if(rec.status !== "set"){ alert("ตรวจรหัสไม่ได้ในตอนนี้ (ต้องต่อเน็ต) กรุณาลองใหม่"); return; }
+    const vals = await pinDialog({
+      title: "ปลดล็อกการแก้ไขจำนวน",
+      sub: "กรอกรหัสเพื่อแก้ไขจำนวนคงเหลือของสินค้านี้",
+      fields: [{ name: "pin", label: "รหัส" }],
+      validate: async (v) => {
+        const m = pinThrottleMessage();
+        if(m) return m;
+        const ok = checkPin(rec.value, v.pin);
+        registerPinResult(ok);
+        return ok ? null : (pinThrottleMessage() || "รหัสไม่ถูกต้อง");
+      }
+    });
+    if(!vals || token !== qtyLockToken) return;
+    qtyUnlockedForForm = true;
+    const qtyInput = document.getElementById("f_qty");
+    qtyInput.readOnly = false;
+    document.getElementById("unlockQtyBtn").style.display = "none";
+    document.getElementById("f_qtyLockNote").textContent = "(ปลดล็อกแล้ว)";
+    qtyInput.focus();
+    qtyInput.select();
+  }
+
+  // ตั้งรหัสครั้งแรก / เปลี่ยนรหัส (เปลี่ยนต้องใช้รหัสเดิม)
+  async function managePin(){
+    const rec = await loadQtyPin();
+    if(rec.status === "error"){ alert("ต้องต่อเน็ตเพื่อตั้งหรือเปลี่ยนรหัส"); return; }
+    if(rec.status === "notable"){
+      alert("ยังไม่ได้สร้างตาราง settings ใน Supabase — ต้องรันคำสั่ง SQL สร้างตารางก่อน (คำสั่งอยู่ใน TASKS.md หัวข้อ TASK 29)");
+      return;
+    }
+    const isSet = rec.status === "set";
+    const fields = (isSet ? [{ name: "cur", label: "รหัสปัจจุบัน" }] : [])
+      .concat([{ name: "pin1", label: "รหัสใหม่ (อย่างน้อย 4 ตัวอักษร)" }, { name: "pin2", label: "ยืนยันรหัสใหม่อีกครั้ง" }]);
+    const vals = await pinDialog({
+      title: isSet ? "เปลี่ยนรหัสแก้ไขจำนวน" : "ตั้งรหัสแก้ไขจำนวน",
+      sub: "รหัสนี้ใช้ร่วมกันทุกเครื่องและทุกสาขา — คนที่มีรหัสเท่านั้นที่แก้จำนวนในหน้ารายการสินค้าได้",
+      fields,
+      validate: async (v) => {
+        if(isSet){
+          const m = pinThrottleMessage();
+          if(m) return m;
+          const ok = checkPin(rec.value, v.cur);
+          registerPinResult(ok);
+          if(!ok) return pinThrottleMessage() || "รหัสปัจจุบันไม่ถูกต้อง";
+        }
+        if(v.pin1.length < 4) return "รหัสใหม่ต้องมีอย่างน้อย 4 ตัวอักษร";
+        if(v.pin1 !== v.pin2) return "รหัสใหม่ 2 ช่องไม่ตรงกัน";
+        return null;
+      }
+    });
+    if(!vals) return;
+    const result = await saveQtyPinRecord(makePinRecord(vals.pin1));
+    if(result === "ok") alert(isSet ? "เปลี่ยนรหัสเรียบร้อยแล้ว" : "ตั้งรหัสเรียบร้อยแล้ว — จากนี้การแก้จำนวนในหน้ารายการสินค้าต้องใช้รหัส");
+    else if(result === "notable") alert("ยังไม่ได้สร้างตาราง settings ใน Supabase — ต้องรันคำสั่ง SQL สร้างตารางก่อน");
+    else alert("บันทึกรหัสไม่สำเร็จ (เช็คอินเทอร์เน็ต) กรุณาลองใหม่");
+  }
+
   function updateSyncStatus(mode){
     const el = document.getElementById("syncStatus");
     if(!supabaseConfigured()){ el.textContent = ""; el.className = "sync-status"; return; }
@@ -373,6 +635,7 @@
       state.transactions = transactions.map(t => ({ ...t, qty: Number(t.qty), unitPrice: Number(t.unitPrice), total: Number(t.total) }));
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
       updateSyncStatus("online");
+      loadQtyPin();   // อัปเดตสถานะรหัสแก้จำนวนไว้ใช้ตอนออฟไลน์
       if(["sale","restock","products","reports"].includes(currentPage)) renderPage(currentPage);
       updateLowStockBadge();
     }catch(err){
@@ -525,6 +788,7 @@
         <div class="toolbar">
           <div class="toolbar-left" id="productFilters"></div>
           <div class="toolbar-right">
+            <button class="btn-secondary" id="pinSettingsBtn">🔑 รหัสแก้จำนวน</button>
             <button class="btn-secondary" id="exportCsvBtn">⬇️ ออกรายงาน CSV</button>
             <button class="btn-primary" id="addProductBtn">+ เพิ่มสินค้า</button>
           </div>
@@ -577,8 +841,11 @@
             <input class="text-input" id="f_sell" type="number" min="0" step="0.01" placeholder="0">
           </div>
           <div>
-            <label class="field-label">จำนวนคงเหลือ</label>
-            <input class="text-input" id="f_qty" type="number" min="0" step="1" placeholder="0">
+            <label class="field-label">จำนวนคงเหลือ <span id="f_qtyLockNote" style="font-weight:400;"></span></label>
+            <div style="display:flex; gap:8px;">
+              <input class="text-input" id="f_qty" type="number" min="0" step="1" placeholder="0">
+              <button class="btn-secondary" id="unlockQtyBtn" style="display:none; white-space:nowrap; padding:9px 12px;">🔒 ปลดล็อก</button>
+            </div>
           </div>
         </div>
         <div class="form-actions">
@@ -604,6 +871,8 @@
     document.getElementById("cancelProductBtn").addEventListener("click", closeProductForm);
     document.getElementById("saveProductBtn").addEventListener("click", saveProductForm);
     document.getElementById("exportCsvBtn").addEventListener("click", exportProductsCsv);
+    document.getElementById("pinSettingsBtn").addEventListener("click", managePin);
+    document.getElementById("unlockQtyBtn").addEventListener("click", unlockQty);
     document.getElementById("f_category").addEventListener("change", (e)=>{
       document.getElementById("f_code_group").style.display = CODE_CATEGORIES.includes(e.target.value) ? "block" : "none";
     });
@@ -781,10 +1050,14 @@
     }
     document.getElementById("f_code_group").style.display = CODE_CATEGORIES.includes(document.getElementById("f_category").value) ? "block" : "none";
     card.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    refreshQtyLock();
   }
 
   function closeProductForm(){
     editingProductId = null;
+    qtyLockToken++;
+    qtyLockActive = true;
+    qtyUnlockedForForm = false;
     document.getElementById("productFormCard").style.display = "none";
   }
 
@@ -797,7 +1070,13 @@
     const category = document.getElementById("f_category").value;
     const costPrice = parseFloat(document.getElementById("f_cost").value);
     const sellPrice = parseFloat(document.getElementById("f_sell").value);
-    const qty = parseInt(document.getElementById("f_qty").value, 10);
+    let qty = parseInt(document.getElementById("f_qty").value, 10);
+
+    // ยังไม่ได้ปลดล็อกด้วยรหัส -> ไม่รับค่าจำนวนจากช่อง (กันแก้ผ่าน DevTools) ใช้จำนวนเดิม / 0 สำหรับสินค้าใหม่
+    if(qtyLockActive && !qtyUnlockedForForm){
+      const current = editingProductId ? state.products.find(x => x.id === editingProductId) : null;
+      qty = current ? current.qty : 0;
+    }
 
     if(!brand || !model){
       alert("กรุณากรอกยี่ห้อและรุ่นของสินค้า");
