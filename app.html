@@ -495,11 +495,12 @@
     const rec = await loadQtyPin();
     if(token !== qtyLockToken) return;   // ฟอร์มถูกปิด/เปิดใหม่ระหว่างรอ
 
+    // ล็อกเสมอ — ยังไม่ได้ตั้งรหัส/ระบบรหัสยังตั้งค่าไม่เสร็จ ก็แก้จำนวนไม่ได้ (ต้องตั้งรหัสก่อน)
     if(rec.status === "unset" || rec.status === "notable"){
-      qtyLockActive = false;
-      qtyInput.readOnly = false;
-      if(!editingProductId && qtyInput.value === "0") qtyInput.value = "";
-      note.textContent = rec.status === "notable" ? "" : "(ยังไม่ได้ตั้งรหัส — กด \"🔑 รหัสแก้จำนวน\" เพื่อตั้ง)";
+      btn.style.display = "inline-block";
+      note.textContent = rec.status === "notable"
+        ? "(ล็อก — ระบบรหัสยังตั้งค่าไม่เสร็จ)"
+        : "(ล็อก — ยังไม่ได้ตั้งรหัส กด \"ปลดล็อก\" เพื่อตั้งรหัสก่อน)";
       return;
     }
     if(rec.status === "set"){
@@ -516,6 +517,15 @@
     if(blocked){ alert(blocked); return; }
     const rec = await loadQtyPin();
     if(token !== qtyLockToken) return;
+    if(rec.status === "notable"){
+      alert("ยังแก้จำนวนไม่ได้ — ระบบรหัสยังตั้งค่าไม่เสร็จ (ต้องรันคำสั่ง SQL สร้างตาราง settings ใน Supabase 1 ครั้ง ดูในไฟล์ TASKS.md หัวข้อ TASK 29)");
+      return;
+    }
+    if(rec.status === "unset"){
+      // ยังไม่เคยตั้งรหัส -> ให้ตั้งก่อน ตั้งเสร็จถือว่าปลดล็อกฟอร์มนี้ได้เลย (เพิ่งกรอกรหัสเอง 2 รอบ)
+      if(await managePin() && token === qtyLockToken) applyQtyUnlock();
+      return;
+    }
     if(rec.status !== "set"){ alert("ตรวจรหัสไม่ได้ในตอนนี้ (ต้องต่อเน็ต) กรุณาลองใหม่"); return; }
     const vals = await pinDialog({
       title: "ปลดล็อกการแก้ไขจำนวน",
@@ -530,6 +540,10 @@
       }
     });
     if(!vals || token !== qtyLockToken) return;
+    applyQtyUnlock();
+  }
+
+  function applyQtyUnlock(){
     qtyUnlockedForForm = true;
     const qtyInput = document.getElementById("f_qty");
     qtyInput.readOnly = false;
@@ -542,10 +556,10 @@
   // ตั้งรหัสครั้งแรก / เปลี่ยนรหัส (เปลี่ยนต้องใช้รหัสเดิม)
   async function managePin(){
     const rec = await loadQtyPin();
-    if(rec.status === "error"){ alert("ต้องต่อเน็ตเพื่อตั้งหรือเปลี่ยนรหัส"); return; }
+    if(rec.status === "error"){ alert("ต้องต่อเน็ตเพื่อตั้งหรือเปลี่ยนรหัส"); return false; }
     if(rec.status === "notable"){
       alert("ยังไม่ได้สร้างตาราง settings ใน Supabase — ต้องรันคำสั่ง SQL สร้างตารางก่อน (คำสั่งอยู่ใน TASKS.md หัวข้อ TASK 29)");
-      return;
+      return false;
     }
     const isSet = rec.status === "set";
     const fields = (isSet ? [{ name: "cur", label: "รหัสปัจจุบัน" }] : [])
@@ -567,11 +581,12 @@
         return null;
       }
     });
-    if(!vals) return;
+    if(!vals) return false;
     const result = await saveQtyPinRecord(makePinRecord(vals.pin1));
     if(result === "ok") alert(isSet ? "เปลี่ยนรหัสเรียบร้อยแล้ว" : "ตั้งรหัสเรียบร้อยแล้ว — จากนี้การแก้จำนวนในหน้ารายการสินค้าต้องใช้รหัส");
     else if(result === "notable") alert("ยังไม่ได้สร้างตาราง settings ใน Supabase — ต้องรันคำสั่ง SQL สร้างตารางก่อน");
     else alert("บันทึกรหัสไม่สำเร็จ (เช็คอินเทอร์เน็ต) กรุณาลองใหม่");
+    return result === "ok";
   }
 
   function updateSyncStatus(mode){
