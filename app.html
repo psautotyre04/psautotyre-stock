@@ -912,7 +912,7 @@
     document.getElementById("exportCsvBtn").addEventListener("click", exportProductsCsv);
     document.getElementById("pinSettingsBtn").addEventListener("click", managePin);
     document.getElementById("unlockQtyBtn").addEventListener("click", unlockQty);
-    setupCombos();
+    setupCombos("f");
     document.getElementById("f_category").addEventListener("change", (e)=>{
       document.getElementById("f_code_group").style.display = CODE_CATEGORIES.includes(e.target.value) ? "block" : "none";
     });
@@ -1039,21 +1039,22 @@
   }
 
   // ---- ช่องยี่ห้อ/รุ่น: พิมพ์เองได้ หรือกดลูกศร ▾ เลือกจากรายการที่มีอยู่แล้ว ----
-  function comboOptions(kind){
-    const category = document.getElementById("f_category").value;
+  // prefix: "f" = ฟอร์มสินค้าในหน้ารายการสินค้า, "r" = ฟอร์มเพิ่มสินค้าใหม่ในหน้ารับของเข้า
+  function comboOptions(prefix, kind){
+    const category = document.getElementById(prefix + "_category").value;
     const brands = getDistinctBrands(state.products, category);
     if(kind === "brand") return brands;
-    const typedBrand = document.getElementById("f_brand").value.trim();
+    const typedBrand = document.getElementById(prefix + "_brand").value.trim();
     // ถ้ายี่ห้อที่พิมพ์/เลือกไว้ตรงกับที่มีอยู่ ให้แสดงเฉพาะรุ่นของยี่ห้อนั้น
     return getDistinctModels(state.products, category, brands.includes(typedBrand) ? typedBrand : "all");
   }
   function closeCombos(){
     document.querySelectorAll(".combo-list").forEach(el => { el.style.display = "none"; });
   }
-  function openCombo(kind, filterText){
-    const list = document.getElementById("f_" + kind + "_list");
+  function openCombo(prefix, kind, filterText){
+    const list = document.getElementById(prefix + "_" + kind + "_list");
     const q = (filterText || "").trim().toLowerCase();
-    let options = comboOptions(kind);
+    let options = comboOptions(prefix, kind);
     if(q) options = options.filter(o => String(o).toLowerCase().includes(q));
     closeCombos();
     list.innerHTML = "";
@@ -1070,7 +1071,7 @@
       item.textContent = o;
       item.addEventListener("mousedown", (e)=>{
         e.preventDefault();
-        const input = document.getElementById("f_" + kind);
+        const input = document.getElementById(prefix + "_" + kind);
         input.value = o;
         closeCombos();
         input.focus();
@@ -1079,22 +1080,26 @@
     });
     list.style.display = "block";
   }
-  function setupCombos(){
+  let comboOutsideListenerAdded = false;
+  function setupCombos(prefix){
     ["brand", "model"].forEach(kind => {
-      const input = document.getElementById("f_" + kind);
-      const arrow = document.getElementById("f_" + kind + "_arrow");
-      const list = document.getElementById("f_" + kind + "_list");
+      const input = document.getElementById(prefix + "_" + kind);
+      const arrow = document.getElementById(prefix + "_" + kind + "_arrow");
+      const list = document.getElementById(prefix + "_" + kind + "_list");
       arrow.addEventListener("mousedown", (e)=> e.preventDefault());
       arrow.addEventListener("click", ()=>{
-        if(list.style.display === "block") closeCombos(); else openCombo(kind, "");
+        if(list.style.display === "block") closeCombos(); else openCombo(prefix, kind, "");
       });
-      input.addEventListener("input", ()=> openCombo(kind, input.value));
+      input.addEventListener("input", ()=> openCombo(prefix, kind, input.value));
       input.addEventListener("keydown", (e)=>{ if(e.key === "Escape") closeCombos(); });
     });
-    document.addEventListener("mousedown", (e)=>{
-      if(!e.target.closest(".combo")) closeCombos();
-    });
-    document.getElementById("f_category").addEventListener("change", closeCombos);
+    if(!comboOutsideListenerAdded){
+      comboOutsideListenerAdded = true;
+      document.addEventListener("mousedown", (e)=>{
+        if(!e.target.closest(".combo")) closeCombos();
+      });
+    }
+    document.getElementById(prefix + "_category").addEventListener("change", closeCombos);
   }
 
   function openProductForm(productId, prefillBarcode){
@@ -1402,11 +1407,19 @@
           </div>
           <div>
             <label class="field-label">ยี่ห้อ</label>
-            <input class="text-input" id="r_brand" placeholder="เช่น Shell">
+            <div class="combo">
+              <input class="text-input" id="r_brand" placeholder="เลือก ▾ หรือพิมพ์ใหม่" autocomplete="off">
+              <button type="button" class="combo-arrow" id="r_brand_arrow" aria-label="เลือกยี่ห้อที่มีอยู่เดิม" title="เลือกจากรายการเดิม">▾</button>
+              <div class="combo-list" id="r_brand_list" style="display:none;"></div>
+            </div>
           </div>
           <div>
             <label class="field-label">รุ่น</label>
-            <input class="text-input" id="r_model" placeholder="เช่น Helix HX7">
+            <div class="combo">
+              <input class="text-input" id="r_model" placeholder="เลือก ▾ หรือพิมพ์ใหม่" autocomplete="off">
+              <button type="button" class="combo-arrow" id="r_model_arrow" aria-label="เลือกรุ่นที่มีอยู่เดิม" title="เลือกจากรายการเดิม">▾</button>
+              <div class="combo-list" id="r_model_list" style="display:none;"></div>
+            </div>
           </div>
           <div>
             <label class="field-label">ขนาด</label>
@@ -1432,6 +1445,7 @@
       rCategorySelect.addEventListener("change", (e)=>{
         rCodeGroup.style.display = CODE_CATEGORIES.includes(e.target.value) ? "block" : "none";
       });
+      setupCombos("r");
     }
   }
 
