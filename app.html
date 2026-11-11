@@ -280,8 +280,6 @@
     "อะไหล่ฟุ่มเฟือย", "อะไหล่ทั่วไป"
   ];
   const LOW_STOCK_THRESHOLD = 3;
-  // หมวดที่ต้องใช้ "รหัสสินค้า" (พาร์ทนัมเบอร์กรอง) เพราะระบุด้วยรุ่นรถ ไม่ใช่ชื่อรุ่นสินค้าแบบน้ำมัน/ยาง
-  const CODE_CATEGORIES = ["ไส้กรองน้ำมันเครื่อง", "กรองอากาศ", "กรองแอร์"];
 
   function genId(){
     return "p_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 7);
@@ -863,7 +861,7 @@
             <label class="field-label">ขนาด</label>
             <input class="text-input" id="f_size" placeholder="เช่น 4L">
           </div>
-          <div id="f_code_group" style="display:none;">
+          <div id="f_code_group">
             <label class="field-label">รหัสสินค้า</label>
             <input class="text-input" id="f_code" placeholder="เช่น BO-211">
           </div>
@@ -913,9 +911,6 @@
     document.getElementById("pinSettingsBtn").addEventListener("click", managePin);
     document.getElementById("unlockQtyBtn").addEventListener("click", unlockQty);
     setupCombos("f");
-    document.getElementById("f_category").addEventListener("change", (e)=>{
-      document.getElementById("f_code_group").style.display = CODE_CATEGORIES.includes(e.target.value) ? "block" : "none";
-    });
     document.getElementById("f_image").addEventListener("change", (e)=>{
       const file = e.target.files[0];
       if(!file) return;
@@ -1152,7 +1147,6 @@
       placeholder.style.display = "flex";
       removeBtn.style.display = "none";
     }
-    document.getElementById("f_code_group").style.display = CODE_CATEGORIES.includes(document.getElementById("f_category").value) ? "block" : "none";
     card.scrollIntoView({ behavior: "smooth", block: "nearest" });
     refreshQtyLock();
   }
@@ -1425,7 +1419,7 @@
             <label class="field-label">ขนาด</label>
             <input class="text-input" id="r_size" placeholder="เช่น 4L">
           </div>
-          <div id="r_code_group" style="display:none;">
+          <div id="r_code_group">
             <label class="field-label">รหัสสินค้า</label>
             <input class="text-input" id="r_code" placeholder="เช่น BO-211">
           </div>
@@ -1439,12 +1433,6 @@
           </div>
         </div>
       `;
-      const rCategorySelect = document.getElementById("r_category");
-      const rCodeGroup = document.getElementById("r_code_group");
-      rCodeGroup.style.display = CODE_CATEGORIES.includes(rCategorySelect.value) ? "block" : "none";
-      rCategorySelect.addEventListener("change", (e)=>{
-        rCodeGroup.style.display = CODE_CATEGORIES.includes(e.target.value) ? "block" : "none";
-      });
       setupCombos("r");
     }
   }
@@ -1507,7 +1495,7 @@
       const brand = document.getElementById("r_brand").value.trim();
       const model = document.getElementById("r_model").value.trim();
       const size = document.getElementById("r_size").value.trim();
-      const code = CODE_CATEGORIES.includes(category) ? document.getElementById("r_code").value.trim() : "";
+      const code = document.getElementById("r_code").value.trim();
       const barcode = document.getElementById("r_new_barcode").value.trim();
       const sellPrice = parseFloat(document.getElementById("r_sell").value);
       if(!brand || !model){
